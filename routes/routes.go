@@ -24,6 +24,7 @@ func SetupRouter(app *common.App) *gin.Engine {
 
 	r.GET("/auth/google", handlers.GetGoogleOAuthURL)
 	r.GET("/auth/google/callback", handlers.GoogleOAuthCallback)
+	r.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
 	r.POST("/calendar/google/events", handlers.FetchGoogleCalendarEventsHandler)
 
 	return r

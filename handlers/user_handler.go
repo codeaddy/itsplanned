@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"itsplanned/models"
+	"itsplanned/security"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,12 +20,15 @@ func Register(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// TODO: добавить хэширование
-	passwordHash := "HASH" + payload.Password
+	hashedPassword, err := security.HashPassword(payload.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
 
 	user := models.User{
 		Email:        payload.Email,
-		PasswordHash: passwordHash,
+		PasswordHash: hashedPassword,
 		DisplayName:  "New User",
 	}
 
