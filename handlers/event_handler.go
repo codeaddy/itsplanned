@@ -36,6 +36,38 @@ func CreateEvent(c *gin.Context, db *gorm.DB) {
 	c.JSON(http.StatusOK, gin.H{"message": "Event created", "event": event})
 }
 
+func UpdateEvent(c *gin.Context, db *gorm.DB) {
+	eventID := c.Param("id")
+
+	var event models.Event
+	if err := db.First(&event, eventID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	if userID.(uint) != event.OrganizerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not the organizer of this event"})
+		return
+	}
+
+	var payload struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+
+	event.Name = payload.Name
+	event.Description = payload.Description
+	db.Save(&event)
+
+	c.JSON(http.StatusOK, gin.H{"event": event})
+}
+
 func UpdateEventBudget(c *gin.Context, db *gorm.DB) {
 	var event models.Event
 	id := c.Param("id")

@@ -53,13 +53,18 @@ func Login(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// TODO: проверять хэш
-	if user.PasswordHash != "HASH"+payload.Password {
+	if !security.ComparePassword(user.PasswordHash, payload.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logged in", "user": user})
+	token, err := security.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func GetProfile(c *gin.Context, db *gorm.DB) {

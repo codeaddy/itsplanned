@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	golang.org/x/crypto v0.32.0
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.219.0

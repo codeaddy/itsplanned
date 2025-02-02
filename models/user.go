@@ -7,7 +7,7 @@ type User struct {
 	Email        string `gorm:"unique;not null"`
 	PasswordHash string `gorm:"not null"`
 	DisplayName  string `gorm:"not null"`
-	Score        int    `gorm:"default:0"`
+	TotalScore   int    `gorm:"default:0"`
 }
 
 func MigrateUser(db *gorm.DB) error {

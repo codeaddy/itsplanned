@@ -3,12 +3,14 @@ package routes
 import (
 	"itsplanned/common"
 	"itsplanned/handlers"
+	"itsplanned/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter(app *common.App) *gin.Engine {
 	r := gin.Default()
+	r.Use(middleware.AuthMiddleware())
 
 	r.POST("/register", func(c *gin.Context) { handlers.Register(c, app.DB) })
 	r.POST("/login", func(c *gin.Context) { handlers.Login(c, app.DB) })

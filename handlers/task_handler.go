@@ -81,12 +81,18 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
+	userID, _ := c.Get("user_id")
+	if userID.(uint) != *task.AssignedTo {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only complete your own tasks"})
+		return
+	}
+
 	task.IsCompleted = true
 	db.Save(&task)
 
 	var user models.User
 	if err := db.First(&user, task.AssignedTo).Error; err == nil {
-		user.Score += task.Points
+		user.TotalScore += task.Points
 		db.Save(&user)
 	}
 
