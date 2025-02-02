@@ -19,6 +19,7 @@ func SetupRouter(app *common.App) *gin.Engine {
 	// r.POST("/events", func(c *gin.Context) { handlers.CreateEvent(c, app.DB) })
 	// r.PUT("/events/:id/budget", func(c *gin.Context) { handlers.UpdateEventBudget(c, app.DB) })
 	// r.GET("/events/:id/budget", func(c *gin.Context) { handlers.GetEventBudget(c, app.DB) })
+	r.GET("/events/:id/leaderboard", func(c *gin.Context) { handlers.GetEventLeaderboard(c, app.DB) })
 
 	// r.POST("/tasks", func(c *gin.Context) { handlers.CreateTask(c, app.DB) })
 	// r.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })

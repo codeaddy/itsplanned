@@ -114,3 +114,22 @@ func GetEventBudget(c *gin.Context, db *gorm.DB) {
 		"difference":     event.InitialBudget - realBudget,
 	})
 }
+
+func GetEventLeaderboard(c *gin.Context, db *gorm.DB) {
+	userID, _ := c.Get("user_id")
+	eventID := c.Param("id")
+
+	var participant models.EventScore
+	if err := db.Where("event_id = ? AND user_id = ?", eventID, userID).First(&participant).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not a participant of this event"})
+		return
+	}
+
+	var leaderboard []models.EventScore
+	if err := db.Where("event_id = ?", eventID).Order("score DESC").Find(&leaderboard).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Leaderboard not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"leaderboard": leaderboard})
+}

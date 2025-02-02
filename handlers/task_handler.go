@@ -77,12 +77,12 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 	}
 
 	if task.IsCompleted {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is already completed"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task already completed"})
 		return
 	}
 
 	userID, _ := c.Get("user_id")
-	if userID.(uint) != *task.AssignedTo {
+	if task.AssignedTo == nil || userID.(uint) != *task.AssignedTo {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You can only complete your own tasks"})
 		return
 	}
@@ -96,5 +96,18 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 		db.Save(&user)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Task completed and points awarded", "task": task})
+	var eventScore models.EventScore
+	if err := db.Where("event_id = ? AND user_id = ?", task.EventID, task.AssignedTo).First(&eventScore).Error; err != nil {
+		eventScore = models.EventScore{
+			EventID: task.EventID,
+			UserID:  *task.AssignedTo,
+			Score:   task.Points,
+		}
+		db.Create(&eventScore)
+	} else {
+		eventScore.Score += task.Points
+		db.Save(&eventScore)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task completed", "task": task})
 }
