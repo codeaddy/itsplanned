@@ -1,11 +1,16 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Event struct {
-	ID            uint   `gorm:"primaryKey"`
-	Name          string `gorm:"not null"`
-	Description   string `gorm:"type:text"`
+	ID            uint      `gorm:"primaryKey"`
+	Name          string    `gorm:"not null"`
+	Description   string    `gorm:"type:text"`
+	EventDateTime time.Time `gorm:"not null"`
 	InitialBudget float64
 	OrganizerID   uint
 	Tasks         []Task       `gorm:"foreignKey:EventID"`
@@ -19,6 +24,14 @@ type EventScore struct {
 	Score   int  `gorm:"default:0"`
 }
 
+type CalendarEvent struct {
+	ID        uint      `gorm:"primaryKey"`
+	UserID    uint      `gorm:"not null"`
+	Title     string    `gorm:"not null"`
+	StartTime time.Time `gorm:"not null"` // В формате RFC3339
+	EndTime   time.Time `gorm:"not null"` // В формате RFC3339
+}
+
 func MigrateEvent(db *gorm.DB) error {
-	return db.AutoMigrate(&Event{}, &EventScore{})
+	return db.AutoMigrate(&Event{}, &EventScore{}, &CalendarEvent{})
 }

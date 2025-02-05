@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"itsplanned/models"
 	"itsplanned/security"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 	var payload struct {
 		UserID       uint   `json:"user_id"`
-		Provider     string `json:"provider"` // google или apple
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 		Expiry       string `json:"expiry"`
@@ -24,12 +24,32 @@ func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	hashedAccessToken := security.HashToken(payload.AccessToken)
-	hashedRefreshToken := security.HashToken(payload.RefreshToken)
+	userID, _ := c.Get("user_id")
+	if userID != payload.UserID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You should save only your tokens"})
+		return
+	}
+
+	hashedAccessToken, err := security.EncryptToken(payload.AccessToken)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error when encrypting tokens"})
+		return
+	}
+	hashedRefreshToken, err := security.EncryptToken(payload.RefreshToken)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error when encrypting tokens"})
+		return
+	}
+
+	var existingToken models.UserToken
+	if err := db.Where("user_id = ?", userID).First(&existingToken).Error; err == nil {
+		db.Delete(&existingToken)
+	}
 
 	token := models.UserToken{
-		UserID:       payload.UserID,
-		Provider:     payload.Provider,
+		UserID:       userID.(uint),
 		AccessToken:  hashedAccessToken,
 		RefreshToken: hashedRefreshToken,
 		Expiry:       payload.Expiry,

@@ -60,7 +60,7 @@ func Login(c *gin.Context, db *gorm.DB) {
 
 	token, err := security.GenerateToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token", "reason": err})
 		return
 	}
 

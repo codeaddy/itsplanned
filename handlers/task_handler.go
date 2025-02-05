@@ -10,11 +10,12 @@ import (
 
 func CreateTask(c *gin.Context, db *gorm.DB) {
 	var payload struct {
-		Title      string  `json:"title"`
-		Budget     float64 `json:"budget"`
-		Points     int     `json:"points"`
-		EventID    uint    `json:"event_id"`
-		AssignedTo *uint   `json:"assigned_to"`
+		Title       string  `json:"title"`
+		Description string  `json:"description"`
+		Budget      float64 `json:"budget"`
+		Points      int     `json:"points"`
+		EventID     uint    `json:"event_id"`
+		AssignedTo  *uint   `json:"assigned_to"`
 	}
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -23,11 +24,12 @@ func CreateTask(c *gin.Context, db *gorm.DB) {
 	}
 
 	task := models.Task{
-		Title:      payload.Title,
-		Budget:     payload.Budget,
-		Points:     payload.Points,
-		EventID:    payload.EventID,
-		AssignedTo: payload.AssignedTo,
+		Title:       payload.Title,
+		Description: payload.Description,
+		Budget:      payload.Budget,
+		Points:      payload.Points,
+		EventID:     payload.EventID,
+		AssignedTo:  payload.AssignedTo,
 	}
 
 	if err := db.Create(&task).Error; err != nil {
@@ -46,6 +48,8 @@ func AssignToTask(c *gin.Context, db *gorm.DB) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
+
+	// TODO: Можно выполнять только задачи тех мероприятий, в которых ты состоишь
 
 	if task.AssignedTo != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Task already has an assignee"})

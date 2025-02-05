@@ -31,6 +31,15 @@ func main() {
 	if err := models.MigrateTask(db); err != nil {
 		log.Fatal("Failed to migrate task model: ", err)
 	}
+	if err := models.MigrateToken(db); err != nil {
+		log.Fatal("Failed to migrate user token model: ", err)
+	}
+	if err := models.MigrateEventInvitation(db); err != nil {
+		log.Fatal("Failed to migrate event invitation model: ", err)
+	}
+	if err := models.MigrateEventParticipation(db); err != nil {
+		log.Fatal("Failed to migrate event participation model: ", err)
+	}
 
 	app := &common.App{DB: db}
 
