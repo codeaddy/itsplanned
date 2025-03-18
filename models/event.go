@@ -7,25 +7,26 @@ import (
 )
 
 type Event struct {
-	ID            uint      `gorm:"primaryKey"`
+	gorm.Model
 	Name          string    `gorm:"not null"`
 	Description   string    `gorm:"type:text"`
 	EventDateTime time.Time `gorm:"not null"`
 	InitialBudget float64
 	OrganizerID   uint
+	Place         string       `gorm:"type:text"`
 	Tasks         []Task       `gorm:"foreignKey:EventID"`
 	EventScores   []EventScore `gorm:"foreignKey:EventID"`
 }
 
 type EventScore struct {
-	ID      uint `gorm:"primaryKey"`
-	EventID uint `gorm:"not null"`
-	UserID  uint `gorm:"not null"`
-	Score   int  `gorm:"default:0"`
+	gorm.Model
+	EventID uint    `gorm:"not null"`
+	UserID  uint    `gorm:"not null"`
+	Score   float64 `gorm:"default:0"`
 }
 
 type CalendarEvent struct {
-	ID        uint      `gorm:"primaryKey"`
+	gorm.Model
 	UserID    uint      `gorm:"not null"`
 	Title     string    `gorm:"not null"`
 	StartTime time.Time `gorm:"not null"` // В формате RFC3339

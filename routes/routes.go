@@ -6,38 +6,63 @@ import (
 	"itsplanned/middleware"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRouter(app *common.App) *gin.Engine {
 	r := gin.Default()
 
+	// Public routes (no middleware)
 	r.POST("/register", func(c *gin.Context) { handlers.Register(c, app.DB) })
 	r.POST("/login", func(c *gin.Context) { handlers.Login(c, app.DB) })
+	r.POST("/password/reset-request", func(c *gin.Context) { handlers.RequestPasswordReset(c, app.DB) })
+	r.POST("/password/reset", func(c *gin.Context) { handlers.ResetPassword(c, app.DB) })
 
-	r.Use(middleware.AuthMiddleware())
+	// Swagger documentation route (public)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// r.GET("/profile", func(c *gin.Context) { handlers.GetProfile(c, app.DB) })
+	// Protected routes
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
 
-	r.GET("/events", func(c *gin.Context) { handlers.GetEvents(c, app.DB) })
-	r.POST("/events", func(c *gin.Context) { handlers.CreateEvent(c, app.DB) })
-	r.POST("/events/find_best_time_for_day", func(c *gin.Context) { handlers.FindBestTimeSlotsForDay(c, app.DB) })
-	r.PUT("/events/:id/budget", func(c *gin.Context) { handlers.UpdateEventBudget(c, app.DB) })
-	r.PUT("/events/:id", func(c *gin.Context) { handlers.UpdateEvent(c, app.DB) })
-	// r.GET("/events/:id/budget", func(c *gin.Context) { handlers.GetEventBudget(c, app.DB) })
-	r.GET("/events/:id/leaderboard", func(c *gin.Context) { handlers.GetEventLeaderboard(c, app.DB) })
+	// User profile routes
+	protected.GET("/profile", func(c *gin.Context) { handlers.GetProfile(c, app.DB) })
+	protected.PUT("/profile", func(c *gin.Context) { handlers.UpdateProfile(c, app.DB) })
+	protected.POST("/logout", func(c *gin.Context) { handlers.Logout(c, app.DB) })
 
-	r.POST("/events/invite", func(c *gin.Context) { handlers.GenerateInviteLink(c, app.DB) })
-	r.GET("/events/join/:invite_code", func(c *gin.Context) { handlers.JoinEvent(c, app.DB) })
+	// Event routes
+	protected.GET("/events", func(c *gin.Context) { handlers.GetEvents(c, app.DB) })
+	protected.GET("/events/:id", func(c *gin.Context) { handlers.GetEvent(c, app.DB) })
+	protected.POST("/events", func(c *gin.Context) { handlers.CreateEvent(c, app.DB) })
+	protected.POST("/events/find_best_time_for_day", func(c *gin.Context) { handlers.FindBestTimeSlotsForDay(c, app.DB) })
+	protected.PUT("/events/:id", func(c *gin.Context) { handlers.UpdateEvent(c, app.DB) })
+	protected.GET("/events/:id/leaderboard", func(c *gin.Context) { handlers.GetEventLeaderboard(c, app.DB) })
+	protected.GET("/events/:id/participants", func(c *gin.Context) { handlers.GetEventParticipants(c, app.DB) })
+	protected.GET("/events/:id/budget", func(c *gin.Context) { handlers.GetEventBudget(c, app.DB) })
 
-	r.POST("/tasks", func(c *gin.Context) { handlers.CreateTask(c, app.DB) })
-	r.PUT("/tasks/:id/assign", func(c *gin.Context) { handlers.AssignToTask(c, app.DB) })
-	r.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })
+	// Event invitation routes
+	protected.POST("/events/invite", func(c *gin.Context) { handlers.GenerateInviteLink(c, app.DB) })
+	protected.GET("/events/join/:invite_code", func(c *gin.Context) { handlers.JoinEvent(c, app.DB) })
 
-	r.GET("/auth/google", handlers.GetGoogleOAuthURL)
-	r.GET("/auth/google/callback", handlers.GoogleOAuthCallback)
-	r.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
+	// Task routes
+	protected.GET("/tasks", func(c *gin.Context) { handlers.GetTasks(c, app.DB) })
+	protected.GET("/tasks/:id", func(c *gin.Context) { handlers.GetTask(c, app.DB) })
+	protected.POST("/tasks", func(c *gin.Context) { handlers.CreateTask(c, app.DB) })
+	protected.PUT("/tasks/:id", func(c *gin.Context) { handlers.UpdateTask(c, app.DB) })
+	protected.PUT("/tasks/:id/assign", func(c *gin.Context) { handlers.AssignToTask(c, app.DB) })
+	protected.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })
 
-	r.GET("/calendar/import", func(c *gin.Context) { handlers.ImportCalendarEvents(c, app.DB) })
+	// AI Assistant routes
+	protected.POST("/ai/chat", func(c *gin.Context) { handlers.StartAIChat(c, app.DB) })
+	protected.POST("/ai/message", func(c *gin.Context) { handlers.SendMessage(c, app.DB) })
+	protected.GET("/ai/chat/:id", func(c *gin.Context) { handlers.GetChatHistory(c, app.DB) })
+
+	// Google Calendar integration
+	protected.GET("/auth/google", handlers.GetGoogleOAuthURL)
+	protected.GET("/auth/google/callback", handlers.GoogleOAuthCallback)
+	protected.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
+	protected.GET("/calendar/import", func(c *gin.Context) { handlers.ImportCalendarEvents(c, app.DB) })
 
 	return r
 }

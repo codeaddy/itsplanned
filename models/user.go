@@ -3,11 +3,15 @@ package models
 import "gorm.io/gorm"
 
 type User struct {
-	ID           uint   `gorm:"primaryKey"`
-	Email        string `gorm:"unique;not null"`
-	PasswordHash string `gorm:"not null"`
-	DisplayName  string `gorm:"not null"`
-	TotalScore   int    `gorm:"default:0"`
+	gorm.Model
+	Email        string `gorm:"unique"`
+	PasswordHash string
+	DisplayName  string
+	Bio          string
+	Avatar       string
+	TotalScore   int
+	Events       []Event `gorm:"foreignKey:OrganizerID"`
+	Tasks        []Task  `gorm:"foreignKey:AssignedTo"`
 }
 
 func MigrateUser(db *gorm.DB) error {

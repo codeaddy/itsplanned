@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"itsplanned/models"
+	"itsplanned/models/api"
 	"itsplanned/security"
 	"log"
 	"net/http"
@@ -17,6 +18,19 @@ import (
 	"gorm.io/gorm"
 )
 
+func toCalendarEventResponse(event *models.CalendarEvent) *api.CalendarEventResponse {
+	if event == nil {
+		return nil
+	}
+	return &api.CalendarEventResponse{
+		ID:        event.ID,
+		UserID:    event.UserID,
+		Title:     event.Title,
+		StartTime: event.StartTime,
+		EndTime:   event.EndTime,
+	}
+}
+
 // Создает HTTP-клиент с OAuth-токеном
 func getGoogleClient(ctx context.Context, accessToken string) *http.Client {
 	config := &oauth2.Config{
@@ -27,22 +41,31 @@ func getGoogleClient(ctx context.Context, accessToken string) *http.Client {
 	return config.Client(ctx, token)
 }
 
+// @Summary Import Google Calendar events
+// @Description Import events from the user's Google Calendar for the next 4 weeks
+// @Tags calendar
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} api.ImportCalendarEventsResponse "Events imported successfully"
+// @Failure 401 {object} api.APIResponse "Unauthorized or no token found"
+// @Failure 500 {object} api.APIResponse "Failed to import events"
+// @Router /calendar/import [get]
 func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "Unauthorized"})
 		return
 	}
 
 	var token models.UserToken
 	if err := db.Where("user_id = ?", userID).First(&token).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token found"})
+		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "No token found"})
 		return
 	}
 
 	decryptedAccessToken, err := security.DecryptToken(token.AccessToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decrypt token"})
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to decrypt token"})
 		return
 	}
 
@@ -50,8 +73,8 @@ func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 	client := getGoogleClient(ctx, decryptedAccessToken)
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to Google Calendar"})
+		log.Printf("Unable to retrieve Calendar client: %v", err)
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to connect to Google Calendar"})
 		return
 	}
 
@@ -67,7 +90,7 @@ func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 		Do()
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to retrieve events"})
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Unable to retrieve events"})
 		return
 	}
 
@@ -100,5 +123,5 @@ func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 		db.Create(&event)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Events imported successfully"})
+	c.JSON(http.StatusOK, api.ImportCalendarEventsResponse{Message: "Events imported successfully"})
 }

@@ -1,0 +1,1480 @@
+basePath: /
+definitions:
+  api.AIChatResponse:
+    properties:
+      created_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  api.AIMessageResponse:
+    properties:
+      chat_id:
+        example: 1
+        type: integer
+      content:
+        example: What theme would you suggest for a birthday party?
+        type: string
+      created_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_user:
+        example: true
+        type: boolean
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  api.APIResponse:
+    properties:
+      data:
+        type: object
+      error:
+        example: Invalid input
+        type: string
+      message:
+        example: Operation successful
+        type: string
+      user:
+        $ref: '#/definitions/api.UserResponse'
+    type: object
+  api.ChatHistoryResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/api.AIMessageResponse'
+        type: array
+    type: object
+  api.CreateEventRequest:
+    properties:
+      description:
+        example: Celebrating John's 30th birthday
+        type: string
+      event_date_time:
+        example: "2024-04-01T18:00:00Z"
+        type: string
+      initial_budget:
+        example: 1000
+        type: number
+      name:
+        example: Birthday Party
+        type: string
+      place:
+        example: Central Park
+        type: string
+    required:
+    - event_date_time
+    - name
+    type: object
+  api.CreateTaskRequest:
+    properties:
+      assigned_to:
+        example: 2
+        type: integer
+      budget:
+        example: 50
+        type: number
+      description:
+        example: Purchase party decorations from the store
+        type: string
+      event_id:
+        example: 1
+        type: integer
+      points:
+        example: 10
+        type: integer
+      title:
+        example: Buy decorations
+        type: string
+    required:
+    - event_id
+    - points
+    - title
+    type: object
+  api.EventBudgetResponse:
+    properties:
+      difference:
+        example: 50
+        type: number
+      initial_budget:
+        example: 1000
+        type: number
+      real_budget:
+        example: 950
+        type: number
+    type: object
+  api.EventLeaderboardEntry:
+    properties:
+      event_id:
+        example: 1
+        type: integer
+      score:
+        example: 85.5
+        type: number
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  api.EventLeaderboardResponse:
+    properties:
+      leaderboard:
+        items:
+          $ref: '#/definitions/api.EventLeaderboardEntry'
+        type: array
+    type: object
+  api.EventParticipantsResponse:
+    properties:
+      participants:
+        example:
+        - '["John Doe"'
+        - ' "Jane Smith"]'
+        items:
+          type: string
+        type: array
+    type: object
+  api.EventResponse:
+    properties:
+      created_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+      description:
+        example: Celebrating John's 30th birthday
+        type: string
+      event_date_time:
+        example: "2024-04-01T18:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      initial_budget:
+        example: 1000
+        type: number
+      name:
+        example: Birthday Party
+        type: string
+      organizer_id:
+        example: 1
+        type: integer
+      place:
+        example: Central Park
+        type: string
+      updated_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+    type: object
+  api.FindBestTimeSlotsRequest:
+    properties:
+      date:
+        example: "2024-04-01"
+        type: string
+      duration_mins:
+        example: 120
+        type: integer
+      end_time:
+        example: "22:00"
+        type: string
+      event_id:
+        example: 1
+        type: integer
+      start_time:
+        example: "08:00"
+        type: string
+    type: object
+  api.FindBestTimeSlotsResponse:
+    properties:
+      suggestions:
+        items:
+          $ref: '#/definitions/api.TimeSlotSuggestion'
+        type: array
+    type: object
+  api.GenerateInviteLinkRequest:
+    properties:
+      event_id:
+        example: 1
+        type: integer
+    type: object
+  api.GenerateInviteLinkResponse:
+    properties:
+      invite_link:
+        example: http://localhost:8080/events/join/abc123
+        type: string
+    type: object
+  api.GoogleOAuthCallbackResponse:
+    properties:
+      access_token:
+        example: ya29.a0AfB_byC...
+        type: string
+      expiry:
+        example: "2024-03-16T15:04:05Z"
+        type: string
+      refresh_token:
+        example: 1//04dK...
+        type: string
+    type: object
+  api.GoogleOAuthURLResponse:
+    properties:
+      url:
+        example: https://accounts.google.com/o/oauth2/auth?...
+        type: string
+    type: object
+  api.ImportCalendarEventsResponse:
+    properties:
+      message:
+        example: Events imported successfully
+        type: string
+    type: object
+  api.JoinEventResponse:
+    properties:
+      message:
+        example: Successfully joined event
+        type: string
+    type: object
+  api.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secretpassword123
+        type: string
+    type: object
+  api.LoginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  api.PasswordResetRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+    type: object
+  api.PasswordResetResponse:
+    properties:
+      message:
+        example: If the email exists, a reset link will be sent
+        type: string
+      reset_token:
+        example: abc123def456
+        type: string
+    type: object
+  api.ProfileUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      bio:
+        example: Software developer and tech enthusiast
+        type: string
+      display_name:
+        example: John Doe
+        type: string
+    type: object
+  api.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secretpassword123
+        type: string
+    type: object
+  api.ResetPasswordRequest:
+    properties:
+      new_password:
+        example: newpassword123
+        type: string
+      token:
+        example: abc123def456
+        type: string
+    type: object
+  api.SaveOAuthTokenRequest:
+    properties:
+      access_token:
+        example: ya29.a0AfB_byC...
+        type: string
+      expiry:
+        example: "2024-03-16T15:04:05Z"
+        type: string
+      refresh_token:
+        example: 1//04dK...
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    required:
+    - access_token
+    - expiry
+    - refresh_token
+    - user_id
+    type: object
+  api.SendMessageRequest:
+    properties:
+      chat_id:
+        example: 1
+        type: integer
+      message:
+        example: What theme would you suggest for a birthday party?
+        type: string
+    type: object
+  api.SendMessageResponse:
+    properties:
+      message:
+        example: Message sent
+        type: string
+      response:
+        $ref: '#/definitions/api.AIMessageResponse'
+    type: object
+  api.TaskResponse:
+    properties:
+      assigned_to:
+        example: 2
+        type: integer
+      budget:
+        example: 50
+        type: number
+      description:
+        example: Purchase party decorations from the store
+        type: string
+      event_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      is_completed:
+        example: false
+        type: boolean
+      points:
+        example: 10
+        type: integer
+      title:
+        example: Buy decorations
+        type: string
+    type: object
+  api.TimeSlotSuggestion:
+    properties:
+      busy_count:
+        example: 2
+        type: integer
+      slot:
+        example: 2024-04-01 18:00
+        type: string
+    type: object
+  api.UpdateEventRequest:
+    properties:
+      budget:
+        example: 1500
+        type: number
+      description:
+        example: Celebrating John's 30th birthday
+        type: string
+      event_date_time:
+        example: "2024-04-01T18:00:00Z"
+        type: string
+      name:
+        example: Birthday Party
+        type: string
+      place:
+        example: Central Park
+        type: string
+    type: object
+  api.UpdateTaskRequest:
+    properties:
+      budget:
+        example: 60
+        type: number
+      description:
+        example: Purchase decorations from the party store
+        type: string
+      points:
+        example: 15
+        type: integer
+      title:
+        example: Buy party decorations
+        type: string
+    type: object
+  api.UserResponse:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      bio:
+        example: Software developer and tech enthusiast
+        type: string
+      created_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+      display_name:
+        example: John Doe
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@itsplanned.com
+    name: ItsPlanned Support
+    url: https://github.com/vl4ddos/itsplanned
+  description: API Server for ItsPlanned - A Collaborative Event Planning Application.
+    This API provides endpoints for managing events, tasks, user profiles, and integrations
+    with external services like Google Calendar.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: ItsPlanned API
+  version: "1.0"
+paths:
+  /ai/chat:
+    post:
+      description: Create a new AI chat session for the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chat started successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.AIChatResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to start chat
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Start a new AI chat
+      tags:
+      - ai-assistant
+  /ai/chat/{id}:
+    get:
+      description: Get the message history for a specific chat
+      parameters:
+      - description: Chat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chat history retrieved successfully
+          schema:
+            $ref: '#/definitions/api.ChatHistoryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not your chat
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Chat not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to fetch messages
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get chat history
+      tags:
+      - ai-assistant
+  /ai/message:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to the AI assistant and get a response
+      parameters:
+      - description: Message details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message sent and response received
+          schema:
+            $ref: '#/definitions/api.SendMessageResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to process message
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Send message to AI assistant
+      tags:
+      - ai-assistant
+  /auth/google:
+    get:
+      description: Get the URL for Google OAuth authorization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OAuth URL generated successfully
+          schema:
+            $ref: '#/definitions/api.GoogleOAuthURLResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Google OAuth URL
+      tags:
+      - calendar
+  /auth/google/callback:
+    get:
+      description: Handle the callback from Google OAuth and exchange code for tokens
+      parameters:
+      - description: Authorization code from Google
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens received successfully
+          schema:
+            $ref: '#/definitions/api.GoogleOAuthCallbackResponse'
+        "400":
+          description: Authorization code not provided
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to get access token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: Google OAuth callback
+      tags:
+      - calendar
+  /auth/oauth/save:
+    post:
+      consumes:
+      - application/json
+      description: Save the OAuth tokens for a user
+      parameters:
+      - description: OAuth token details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.SaveOAuthTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token saved successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid payload or unauthorized token save attempt
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to save token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Save OAuth tokens
+      tags:
+      - calendar
+  /calendar/import:
+    get:
+      description: Import events from the user's Google Calendar for the next 4 weeks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Events imported successfully
+          schema:
+            $ref: '#/definitions/api.ImportCalendarEventsResponse'
+        "401":
+          description: Unauthorized or no token found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to import events
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Import Google Calendar events
+      tags:
+      - calendar
+  /events:
+    get:
+      description: Get all events where the user is a participant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Events retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.EventResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user's events
+      tags:
+      - events
+    post:
+      consumes:
+      - application/json
+      description: Create a new event with the given details
+      parameters:
+      - description: Event creation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.EventResponse'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to create event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new event
+      tags:
+      - events
+  /events/{id}:
+    get:
+      description: Get detailed information about a specific event
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event details retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.EventResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get event details
+      tags:
+      - events
+    put:
+      consumes:
+      - application/json
+      description: Update an existing event's details
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.EventResponse'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not the organizer
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an event
+      tags:
+      - events
+  /events/{id}/budget:
+    get:
+      description: Get the budget details for an event, including initial budget,
+        real budget, and difference
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Budget details retrieved successfully
+          schema:
+            $ref: '#/definitions/api.EventBudgetResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get event budget details
+      tags:
+      - events
+  /events/{id}/leaderboard:
+    get:
+      description: Get the leaderboard for an event
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Leaderboard retrieved successfully
+          schema:
+            $ref: '#/definitions/api.EventLeaderboardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Not a participant
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Leaderboard not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get event leaderboard
+      tags:
+      - events
+  /events/{id}/participants:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of display names of all participants in an event
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of participants' display names
+          schema:
+            $ref: '#/definitions/api.EventParticipantsResponse'
+        "400":
+          description: Invalid event ID
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get event participants
+      tags:
+      - events
+  /events/find_best_time_for_day:
+    post:
+      consumes:
+      - application/json
+      description: Find the best available time slots for an event based on participants'
+        schedules and specified time range
+      parameters:
+      - description: Find best time slots request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.FindBestTimeSlotsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time slots found successfully
+          schema:
+            $ref: '#/definitions/api.FindBestTimeSlotsResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found or no participants
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Find best time slots for an event
+      tags:
+      - events
+  /events/invite:
+    post:
+      consumes:
+      - application/json
+      description: Generate a unique invite link for an event
+      parameters:
+      - description: Event ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GenerateInviteLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invite link generated successfully
+          schema:
+            $ref: '#/definitions/api.GenerateInviteLinkResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate event invite link
+      tags:
+      - invitations
+  /events/join/{invite_code}:
+    get:
+      description: Join an event using a unique invite code
+      parameters:
+      - description: Invite Code
+        in: path
+        name: invite_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully joined event
+          schema:
+            $ref: '#/definitions/api.JoinEventResponse'
+        "400":
+          description: Already a participant
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Invalid invite link
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Join event using invite link
+      tags:
+      - invitations
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/api.LoginResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to generate token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: User login
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Logout the current user (client-side token removal)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - auth
+  /password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Reset user password using a valid reset token
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid payload or token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: Reset password
+      tags:
+      - auth
+  /password/reset-request:
+    post:
+      consumes:
+      - application/json
+      description: Request a password reset token for a user
+      parameters:
+      - description: User email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset token generated
+          schema:
+            $ref: '#/definitions/api.PasswordResetResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: Request password reset
+      tags:
+      - auth
+  /profile:
+    get:
+      description: Get the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - profile
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with email and password
+      parameters:
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to hash password
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /tasks:
+    get:
+      description: Get a list of all tasks associated with a specific event
+      parameters:
+      - description: Event ID
+        in: query
+        name: event_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of tasks retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.TaskResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid event ID
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all tasks for an event
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task for an event
+      parameters:
+      - description: Task creation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TaskResponse'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to create task
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new task
+      tags:
+      - tasks
+  /tasks/{id}:
+    get:
+      description: Get detailed information about a specific task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task details retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TaskResponse'
+              type: object
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task details
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update details of an existing task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TaskResponse'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not a participant of the event or not the organizer
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update task details
+      tags:
+      - tasks
+  /tasks/{id}/assign:
+    put:
+      consumes:
+      - application/json
+      description: Assign the authenticated user to an unassigned task or unassign
+        if already assigned
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task assignment toggled successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TaskResponse'
+              type: object
+        "400":
+          description: Task already assigned to another user
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Toggle task assignment
+      tags:
+      - tasks
+  /tasks/{id}/complete:
+    put:
+      consumes:
+      - application/json
+      description: Mark a task as completed or uncompleted and update user scores
+        accordingly
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task completion toggled successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TaskResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not assigned to the task
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Toggle task completion
+      tags:
+      - tasks
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: Authentication endpoints for user registration, login, and password
+    management
+  name: auth
+- description: User profile management endpoints
+  name: profile
+- description: Event management endpoints for creating, updating, and managing events
+  name: events
+- description: Task management endpoints for creating, assigning, and completing tasks
+  name: tasks
+- description: Event invitation endpoints for generating and using invite links
+  name: invitations
+- description: AI assistant endpoints for chat-based event planning assistance
+  name: ai-assistant
+- description: Google Calendar integration endpoints for importing events
+  name: calendar

@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"itsplanned/models"
+	"itsplanned/models/api"
 	"itsplanned/security"
 	"net/http"
 
@@ -10,36 +11,40 @@ import (
 	"gorm.io/gorm"
 )
 
-// Сохраняем хэшированный токен в базу
+// @Summary Save OAuth tokens
+// @Description Save the OAuth tokens for a user
+// @Tags calendar
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body api.SaveOAuthTokenRequest true "OAuth token details"
+// @Success 200 {object} api.APIResponse "Token saved successfully"
+// @Failure 400 {object} api.APIResponse "Invalid payload or unauthorized token save attempt"
+// @Failure 500 {object} api.APIResponse "Failed to save token"
+// @Router /auth/oauth/save [post]
 func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
-	var payload struct {
-		UserID       uint   `json:"user_id"`
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		Expiry       string `json:"expiry"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+	var request api.SaveOAuthTokenRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid payload"})
 		return
 	}
 
 	userID, _ := c.Get("user_id")
-	if userID != payload.UserID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "You should save only your tokens"})
+	if userID != request.UserID {
+		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "You should save only your tokens"})
 		return
 	}
 
-	hashedAccessToken, err := security.EncryptToken(payload.AccessToken)
+	hashedAccessToken, err := security.EncryptToken(request.AccessToken)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error when encrypting tokens"})
+		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Error when encrypting tokens"})
 		return
 	}
-	hashedRefreshToken, err := security.EncryptToken(payload.RefreshToken)
+	hashedRefreshToken, err := security.EncryptToken(request.RefreshToken)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error when encrypting tokens"})
+		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Error when encrypting tokens"})
 		return
 	}
 
@@ -52,13 +57,13 @@ func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 		UserID:       userID.(uint),
 		AccessToken:  hashedAccessToken,
 		RefreshToken: hashedRefreshToken,
-		Expiry:       payload.Expiry,
+		Expiry:       request.Expiry.String(),
 	}
 
 	if err := db.Create(&token).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save token"})
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to save token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Token saved successfully"})
+	c.JSON(http.StatusOK, api.APIResponse{Message: "Token saved successfully"})
 }

@@ -1,0 +1,1206 @@
+openapi: 3.0.0
+info:
+  title: ItsPlanned API
+  version: 1.0.0
+  description: API Server for ItsPlanned - A Collaborative Event Planning Application
+  contact:
+    name: ItsPlanned Support
+    url: https://github.com/vl4ddos/itsplanned
+    email: support@itsplanned.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345"
+
+  schemas:
+    APIResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        message:
+          type: string
+          example: "Success message"
+        data:
+          type: object
+          description: "Optional data payload"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          example: "user@example.com"
+        display_name:
+          type: string
+          example: "John Doe"
+        bio:
+          type: string
+          example: "Event planning enthusiast"
+        avatar:
+          type: string
+          example: "https://example.com/avatar.jpg"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: "user@example.com"
+        password:
+          type: string
+          example: "securepassword123"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: "user@example.com"
+        password:
+          type: string
+          example: "securepassword123"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+
+    EventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        name:
+          type: string
+          example: "Birthday Party"
+        description:
+          type: string
+          example: "Celebrating John's 30th birthday"
+        event_date_time:
+          type: string
+          format: date-time
+        initial_budget:
+          type: number
+          format: float
+          example: 1000.00
+        organizer_id:
+          type: integer
+          example: 1
+        place:
+          type: string
+          example: "Central Park"
+
+    CreateEventRequest:
+      type: object
+      required:
+        - name
+        - event_date_time
+      properties:
+        name:
+          type: string
+          example: "Birthday Party"
+        description:
+          type: string
+          example: "Celebrating John's 30th birthday"
+        event_date_time:
+          type: string
+          format: date-time
+          example: "2024-04-01T18:00:00Z"
+        initial_budget:
+          type: number
+          format: float
+          example: 1000.00
+        place:
+          type: string
+          example: "Central Park"
+
+    UpdateEventRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Birthday Party"
+        description:
+          type: string
+          example: "Celebrating John's 30th birthday"
+        event_date_time:
+          type: string
+          format: date-time
+          example: "2024-04-01T18:00:00Z"
+        budget:
+          type: number
+          format: float
+          example: 1500.00
+        place:
+          type: string
+          example: "Central Park"
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Buy decorations"
+        description:
+          type: string
+          example: "Purchase party decorations from the store"
+        budget:
+          type: number
+          format: float
+          example: 50.00
+        points:
+          type: integer
+          example: 10
+        event_id:
+          type: integer
+          example: 1
+        assigned_to:
+          type: integer
+          nullable: true
+          example: 2
+        is_completed:
+          type: boolean
+          example: false
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+        - event_id
+        - points
+      properties:
+        title:
+          type: string
+          example: "Buy decorations"
+        description:
+          type: string
+          example: "Purchase party decorations from the store"
+        budget:
+          type: number
+          format: float
+          example: 50.00
+        points:
+          type: integer
+          example: 10
+        event_id:
+          type: integer
+          example: 1
+        assigned_to:
+          type: integer
+          example: 2
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Buy party decorations"
+        description:
+          type: string
+          example: "Purchase decorations from the party store"
+        budget:
+          type: number
+          format: float
+          example: 60.00
+        points:
+          type: integer
+          example: 15
+
+    EventBudgetResponse:
+      type: object
+      properties:
+        initial_budget:
+          type: number
+          format: float
+          example: 1000.00
+        real_budget:
+          type: number
+          format: float
+          example: 950.00
+        difference:
+          type: number
+          format: float
+          example: 50.00
+
+    EventLeaderboardEntry:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        score:
+          type: number
+          format: float
+          example: 85.5
+        event_id:
+          type: integer
+          example: 1
+
+    EventLeaderboardResponse:
+      type: object
+      properties:
+        leaderboard:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLeaderboardEntry'
+
+    EventParticipantsResponse:
+      type: object
+      properties:
+        participants:
+          type: array
+          items:
+            type: string
+          example: ["John Doe", "Jane Smith"]
+
+    FindBestTimeSlotsRequest:
+      type: object
+      required:
+        - event_id
+        - date
+        - duration_mins
+      properties:
+        event_id:
+          type: integer
+          example: 1
+        date:
+          type: string
+          example: "2024-04-01"
+        duration_mins:
+          type: integer
+          example: 120
+        start_time:
+          type: string
+          example: "08:00"
+        end_time:
+          type: string
+          example: "22:00"
+
+    TimeSlotSuggestion:
+      type: object
+      properties:
+        slot:
+          type: string
+          example: "2024-04-01 18:00"
+        busy_count:
+          type: integer
+          example: 2
+
+    FindBestTimeSlotsResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSlotSuggestion'
+
+paths:
+  /register:
+    post:
+      tags:
+        - auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /login:
+    post:
+      tags:
+        - auth
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /password/reset-request:
+    post:
+      tags:
+        - auth
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset request successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /password/reset:
+    post:
+      tags:
+        - auth
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /profile:
+    get:
+      tags:
+        - profile
+      summary: Get user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    put:
+      tags:
+        - profile
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /logout:
+    post:
+      tags:
+        - auth
+      summary: Logout user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events:
+    get:
+      tags:
+        - events
+      summary: Get user's events
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventResponse'
+    post:
+      tags:
+        - events
+      summary: Create a new event
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '200':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EventResponse'
+
+  /events/{id}:
+    get:
+      tags:
+        - events
+      summary: Get event details
+      description: Get detailed information about a specific event
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event
+      responses:
+        '200':
+          description: Event details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EventResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not a participant of the event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    put:
+      tags:
+        - events
+      summary: Update an event
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EventResponse'
+        '403':
+          description: Not authorized to update this event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events/{id}/budget:
+    get:
+      tags:
+        - events
+      summary: Get event budget details
+      description: Get the budget details for an event, including initial budget, real budget, and difference
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event
+      responses:
+        '200':
+          description: Budget details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventBudgetResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events/{id}/participants:
+    get:
+      tags:
+        - events
+      summary: Get event participants
+      description: Get a list of display names of all participants in an event
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event
+      responses:
+        '200':
+          description: List of participants' display names
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventParticipantsResponse'
+        '400':
+          description: Invalid event ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not a participant of the event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events/invite:
+    post:
+      tags:
+        - invitations
+      summary: Generate event invite link
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateInviteLinkRequest'
+      responses:
+        '200':
+          description: Invite link generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateInviteLinkResponse'
+
+  /events/join/{invite_code}:
+    get:
+      tags:
+        - invitations
+      summary: Join event using invite link
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: invite_code
+          required: true
+          schema:
+            type: string
+          description: Invite code for the event
+      responses:
+        '200':
+          description: Successfully joined event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinEventResponse'
+
+  /events/{id}/leaderboard:
+    get:
+      tags:
+        - events
+      summary: Get event leaderboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLeaderboardResponse'
+
+  /events/find_best_time_for_day:
+    post:
+      tags:
+        - events
+      summary: Find best time slots for an event
+      description: Find the best available time slots for an event based on participants' schedules
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindBestTimeSlotsRequest'
+      responses:
+        '200':
+          description: Time slots found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindBestTimeSlotsResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found or no participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /tasks:
+    get:
+      tags:
+        - tasks
+      summary: Get all tasks for an event
+      description: Get a list of all tasks associated with a specific event
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: event_id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event
+      responses:
+        '200':
+          description: List of tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Invalid event ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not a participant of the event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    post:
+      tags:
+        - tasks
+      summary: Create a new task
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '200':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to create task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /tasks/{id}:
+    get:
+      tags:
+        - tasks
+      summary: Get task details
+      description: Get detailed information about a specific task
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the task
+      responses:
+        '200':
+          description: Task details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Invalid task ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not a participant of the event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    put:
+      tags:
+        - tasks
+      summary: Update task details
+      description: Update details of an existing task
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not a participant of the event or not the organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /tasks/{id}/assign:
+    put:
+      tags:
+        - tasks
+      summary: Toggle task assignment
+      description: Assign the authenticated user to an unassigned task or unassign if already assigned
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the task
+      responses:
+        '200':
+          description: Task assignment toggled successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Task already assigned to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /tasks/{id}/complete:
+    put:
+      tags:
+        - tasks
+      summary: Toggle task completion
+      description: Mark a task as completed or uncompleted and update user scores accordingly
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the task
+      responses:
+        '200':
+          description: Task completion toggled successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not assigned to the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /ai/chat:
+    post:
+      tags:
+        - ai-assistant
+      summary: Start a new AI chat
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Chat started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIChatResponse'
+
+  /ai/message:
+    post:
+      tags:
+        - ai-assistant
+      summary: Send message to AI assistant
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+
+  /ai/chat/{id}:
+    get:
+      tags:
+        - ai-assistant
+      summary: Get chat history
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Chat ID
+      responses:
+        '200':
+          description: Chat history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoryResponse'
+
+  /auth/google:
+    get:
+      tags:
+        - calendar
+      summary: Get Google OAuth URL
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OAuth URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleOAuthURLResponse'
+
+  /auth/google/callback:
+    get:
+      tags:
+        - calendar
+      summary: Google OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+      responses:
+        '200':
+          description: Tokens received successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleOAuthCallbackResponse'
+
+  /auth/oauth/save:
+    post:
+      tags:
+        - calendar
+      summary: Save OAuth tokens
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveOAuthTokenRequest'
+      responses:
+        '200':
+          description: Token saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /calendar/import:
+    get:
+      tags:
+        - calendar
+      summary: Import Google Calendar events
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Events imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportCalendarEventsResponse'
+
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: profile
+    description: User profile management
+  - name: events
+    description: Event management
+  - name: tasks
+    description: Task management
+  - name: calendar
+    description: Google Calendar integration 
