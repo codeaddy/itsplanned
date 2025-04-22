@@ -1,159 +1,115 @@
 package handlers
 
 import (
-	"itsplanned/models"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"itsplanned/models/api"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func toAIChatResponse(chat *models.AIChat) *api.AIChatResponse {
-	if chat == nil {
-		return nil
-	}
-	return &api.AIChatResponse{
-		ID:        chat.ID,
-		UserID:    chat.UserID,
-		CreatedAt: chat.CreatedAt,
-	}
-}
-
-func toAIMessageResponse(message *models.AIMessage) *api.AIMessageResponse {
-	if message == nil {
-		return nil
-	}
-	return &api.AIMessageResponse{
-		ID:        message.ID,
-		ChatID:    message.ChatID,
-		UserID:    message.UserID,
-		Content:   message.Content,
-		IsUser:    message.IsUser,
-		CreatedAt: message.CreatedAt,
-	}
-}
-
-// @Summary Start a new AI chat
-// @Description Create a new AI chat session for the user
-// @Tags ai-assistant
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} api.APIResponse{data=api.AIChatResponse} "Chat started successfully"
-// @Failure 401 {object} api.APIResponse "Unauthorized"
-// @Failure 500 {object} api.APIResponse "Failed to start chat"
-// @Router /ai/chat [post]
-func StartAIChat(c *gin.Context, db *gorm.DB) {
-	userID, _ := c.Get("user_id")
-
-	chat := models.AIChat{
-		UserID: userID.(uint),
-	}
-
-	if err := db.Create(&chat).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to start chat"})
-		return
-	}
-
-	c.JSON(http.StatusOK, api.APIResponse{
-		Message: "Chat started",
-		Data:    toAIChatResponse(&chat),
-	})
-}
-
-// @Summary Send message to AI assistant
-// @Description Send a message to the AI assistant and get a response
+// @Summary Send message to Yandex GPT
+// @Description Proxy request to Yandex GPT API and return the response
 // @Tags ai-assistant
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body api.SendMessageRequest true "Message details"
-// @Success 200 {object} api.SendMessageResponse "Message sent and response received"
+// @Param request body api.YandexGPTRequest true "Dialog history to send to Yandex GPT"
+// @Success 200 {object} api.YandexGPTResponse "Response from Yandex GPT"
 // @Failure 400 {object} api.APIResponse "Invalid payload"
 // @Failure 401 {object} api.APIResponse "Unauthorized"
 // @Failure 500 {object} api.APIResponse "Failed to process message"
 // @Router /ai/message [post]
-func SendMessage(c *gin.Context, db *gorm.DB) {
-	var request api.SendMessageRequest
+func SendToYandexGPT(c *gin.Context, db *gorm.DB) {
+	var request api.YandexGPTRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid payload"})
 		return
 	}
 
-	userID, _ := c.Get("user_id")
+	// Get Yandex GPT API credentials from environment
+	folderID := os.Getenv("YANDEX_CATALOG_ID")
+	iamToken := os.Getenv("YANDEX_IAM_TOKEN")
 
-	message := models.AIMessage{
-		ChatID:  request.ChatID,
-		UserID:  userID.(uint),
-		Content: request.Message,
-		IsUser:  true,
-	}
-
-	if err := db.Create(&message).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to save message"})
+	if folderID == "" || iamToken == "" {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Missing Yandex GPT API credentials"})
 		return
 	}
 
-	// TODO: Integrate with actual AI service
-	// For now, just return a mock response
-	aiResponse := "Thank you for your message! I'm still learning how to help with event planning. Here are some theme suggestions based on your message..."
-
-	aiMessage := models.AIMessage{
-		ChatID:  request.ChatID,
-		Content: aiResponse,
-		IsUser:  false,
+	// Prepare the request to Yandex GPT API
+	yandexRequest := api.YandexGPTAPIRequest{
+		ModelUri: fmt.Sprintf("gpt://%s/yandexgpt", folderID),
+		CompletionOptions: struct {
+			Stream           bool    `json:"stream"`
+			Temperature      float64 `json:"temperature"`
+			MaxTokens        string  `json:"maxTokens"`
+			ReasoningOptions struct {
+				Mode string `json:"mode"`
+			} `json:"reasoningOptions"`
+		}{
+			Stream:      false,
+			Temperature: 0.6,
+			MaxTokens:   "2000",
+			ReasoningOptions: struct {
+				Mode string `json:"mode"`
+			}{
+				Mode: "DISABLED",
+			},
+		},
+		Messages: request.Messages,
 	}
 
-	if err := db.Create(&aiMessage).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to save AI response"})
+	// Convert request to JSON
+	requestBody, err := json.Marshal(yandexRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to prepare request"})
 		return
 	}
 
-	c.JSON(http.StatusOK, api.SendMessageResponse{
-		Message:  "Message sent",
-		Response: *toAIMessageResponse(&aiMessage),
+	// Send request to Yandex GPT API
+	yandexGPTURL := "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+	req, err := http.NewRequest("POST", yandexGPTURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to create request"})
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+iamToken)
+	req.Header.Set("x-folder-id", folderID)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to send request to Yandex GPT"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: fmt.Sprintf("Yandex GPT API returned error: %d", resp.StatusCode)})
+		return
+	}
+
+	// Parse response from Yandex GPT API
+	var yandexResponse api.YandexGPTAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&yandexResponse); err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to parse Yandex GPT response"})
+		return
+	}
+
+	// Check if response contains alternatives
+	if len(yandexResponse.Result.Alternatives) == 0 {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "No response from Yandex GPT"})
+		return
+	}
+
+	// Return the response
+	c.JSON(http.StatusOK, api.YandexGPTResponse{
+		Message: yandexResponse.Result.Alternatives[0].Message.Text,
 	})
-}
-
-// @Summary Get chat history
-// @Description Get the message history for a specific chat
-// @Tags ai-assistant
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "Chat ID"
-// @Success 200 {object} api.ChatHistoryResponse "Chat history retrieved successfully"
-// @Failure 401 {object} api.APIResponse "Unauthorized"
-// @Failure 403 {object} api.APIResponse "Forbidden - not your chat"
-// @Failure 404 {object} api.APIResponse "Chat not found"
-// @Failure 500 {object} api.APIResponse "Failed to fetch messages"
-// @Router /ai/chat/{id} [get]
-func GetChatHistory(c *gin.Context, db *gorm.DB) {
-	chatID := c.Param("id")
-	userID, _ := c.Get("user_id")
-
-	var chat models.AIChat
-	if err := db.First(&chat, chatID).Error; err != nil {
-		c.JSON(http.StatusNotFound, api.APIResponse{Error: "Chat not found"})
-		return
-	}
-
-	if chat.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, api.APIResponse{Error: "You can only access your own chats"})
-		return
-	}
-
-	var messages []models.AIMessage
-	if err := db.Where("chat_id = ?", chatID).Order("created_at asc").Find(&messages).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to fetch messages"})
-		return
-	}
-
-	var response api.ChatHistoryResponse
-	for _, msg := range messages {
-		if msgResponse := toAIMessageResponse(&msg); msgResponse != nil {
-			response.Messages = append(response.Messages, *msgResponse)
-		}
-	}
-
-	c.JSON(http.StatusOK, response)
 }

@@ -17,113 +17,6 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
-        "/ai/chat": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new AI chat session for the user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ai-assistant"
-                ],
-                "summary": "Start a new AI chat",
-                "responses": {
-                    "200": {
-                        "description": "Chat started successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.AIChatResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to start chat",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/ai/chat/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get the message history for a specific chat",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ai-assistant"
-                ],
-                "summary": "Get chat history",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Chat ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Chat history retrieved successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.ChatHistoryResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - not your chat",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Chat not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch messages",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/ai/message": {
             "post": {
                 "security": [
@@ -131,7 +24,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Send a message to the AI assistant and get a response",
+                "description": "Proxy request to Yandex GPT API and return the response",
                 "consumes": [
                     "application/json"
                 ],
@@ -141,23 +34,23 @@
                 "tags": [
                     "ai-assistant"
                 ],
-                "summary": "Send message to AI assistant",
+                "summary": "Send message to Yandex GPT",
                 "parameters": [
                     {
-                        "description": "Message details",
+                        "description": "Dialog history to send to Yandex GPT",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SendMessageRequest"
+                            "$ref": "#/definitions/api.YandexGPTRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Message sent and response received",
+                        "description": "Response from Yandex GPT",
                         "schema": {
-                            "$ref": "#/definitions/api.SendMessageResponse"
+                            "$ref": "#/definitions/api.YandexGPTResponse"
                         }
                     },
                     "400": {
@@ -1000,6 +893,63 @@
                 }
             }
         },
+        "/notifications/device-token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Register a device token for push notifications",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Register device token",
+                "parameters": [
+                    {
+                        "description": "Device token registration details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.RegisterDeviceTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device token registered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to register device token",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/password/reset": {
             "post": {
                 "description": "Reset user password using a valid reset token",
@@ -1650,52 +1600,6 @@
         }
     },
     "definitions": {
-        "api.AIChatResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-03-16T12:00:00Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "api.AIMessageResponse": {
-            "type": "object",
-            "properties": {
-                "chat_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "content": {
-                    "type": "string",
-                    "example": "What theme would you suggest for a birthday party?"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-03-16T12:00:00Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "is_user": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
         "api.APIResponse": {
             "type": "object",
             "properties": {
@@ -1712,17 +1616,6 @@
                 },
                 "user": {
                     "$ref": "#/definitions/api.UserResponse"
-                }
-            }
-        },
-        "api.ChatHistoryResponse": {
-            "type": "object",
-            "properties": {
-                "messages": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.AIMessageResponse"
-                    }
                 }
             }
         },
@@ -2049,6 +1942,24 @@
                 }
             }
         },
+        "api.RegisterDeviceTokenRequest": {
+            "type": "object",
+            "required": [
+                "device_token",
+                "device_type"
+            ],
+            "properties": {
+                "device_token": {
+                    "type": "string",
+                    "example": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+                },
+                "device_type": {
+                    "description": "ios, android, web",
+                    "type": "string",
+                    "example": "ios"
+                }
+            }
+        },
         "api.RegisterRequest": {
             "type": "object",
             "properties": {
@@ -2099,31 +2010,6 @@
                 "user_id": {
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "api.SendMessageRequest": {
-            "type": "object",
-            "properties": {
-                "chat_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "message": {
-                    "type": "string",
-                    "example": "What theme would you suggest for a birthday party?"
-                }
-            }
-        },
-        "api.SendMessageResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Message sent"
-                },
-                "response": {
-                    "$ref": "#/definitions/api.AIMessageResponse"
                 }
             }
         },
@@ -2255,6 +2141,39 @@
                     "example": "2024-03-16T12:00:00Z"
                 }
             }
+        },
+        "api.YandexGPTMessage": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "example": "user"
+                },
+                "text": {
+                    "type": "string",
+                    "example": "What theme would you suggest for a birthday party?"
+                }
+            }
+        },
+        "api.YandexGPTRequest": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.YandexGPTMessage"
+                    }
+                }
+            }
+        },
+        "api.YandexGPTResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "For a birthday party, I would suggest several themes..."
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -2293,6 +2212,10 @@
         {
             "description": "Google Calendar integration endpoints for importing events",
             "name": "calendar"
+        },
+        {
+            "description": "Push notification endpoints for registering device tokens and managing notification preferences",
+            "name": "notifications"
         }
     ]
 }

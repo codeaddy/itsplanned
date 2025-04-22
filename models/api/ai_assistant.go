@@ -35,3 +35,52 @@ type SendMessageResponse struct {
 type ChatHistoryResponse struct {
 	Messages []AIMessageResponse `json:"messages"`
 }
+
+// YandexGPTRequest represents the request to Yandex GPT API
+type YandexGPTRequest struct {
+	Messages []YandexGPTMessage `json:"messages"`
+}
+
+// YandexGPTResponse represents the response from Yandex GPT API
+type YandexGPTResponse struct {
+	Message string `json:"message" example:"For a birthday party, I would suggest several themes..."`
+}
+
+// YandexGPTAPIRequest represents the request body for Yandex GPT API
+type YandexGPTAPIRequest struct {
+	ModelUri          string `json:"modelUri"`
+	CompletionOptions struct {
+		Stream           bool    `json:"stream"`
+		Temperature      float64 `json:"temperature"`
+		MaxTokens        string  `json:"maxTokens"`
+		ReasoningOptions struct {
+			Mode string `json:"mode"`
+		} `json:"reasoningOptions"`
+	} `json:"completionOptions"`
+	Messages []YandexGPTMessage `json:"messages"`
+}
+
+// YandexGPTMessage represents a message in the Yandex GPT conversation
+type YandexGPTMessage struct {
+	Role string `json:"role" example:"user"`
+	Text string `json:"text" example:"What theme would you suggest for a birthday party?"`
+}
+
+// YandexGPTAPIResponse represents the response body from Yandex GPT API
+type YandexGPTAPIResponse struct {
+	Result struct {
+		Alternatives []struct {
+			Message struct {
+				Role string `json:"role"`
+				Text string `json:"text"`
+			} `json:"message"`
+			Status string `json:"status"`
+		} `json:"alternatives"`
+		Usage struct {
+			InputTextTokens  string `json:"inputTextTokens"`
+			CompletionTokens string `json:"completionTokens"`
+			TotalTokens      string `json:"totalTokens"`
+		} `json:"usage"`
+		ModelVersion string `json:"modelVersion"`
+	} `json:"result"`
+}

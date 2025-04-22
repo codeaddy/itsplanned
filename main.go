@@ -5,6 +5,7 @@ import (
 	"itsplanned/models"
 	"itsplanned/routes"
 	"itsplanned/services/email"
+	"itsplanned/services/notification"
 	"log"
 	"os"
 
@@ -55,6 +56,9 @@ import (
 
 // @tag.name calendar
 // @tag.description Google Calendar integration endpoints for importing events
+
+// @tag.name notifications
+// @tag.description Push notification endpoints for registering device tokens and managing notification preferences
 func main() {
 	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
@@ -75,6 +79,10 @@ func main() {
 
 	if err := email.Init(); err != nil {
 		log.Fatal("Error initializing email service:", err)
+	}
+
+	if err := notification.Init(db); err != nil {
+		log.Fatal("Error initializing notification service:", err)
 	}
 
 	// Run database migrations
@@ -99,8 +107,8 @@ func main() {
 	if err := models.MigratePasswordReset(db); err != nil {
 		log.Fatal("Failed to migrate password reset model: ", err)
 	}
-	if err := models.MigrateAIChat(db); err != nil {
-		log.Fatal("Failed to migrate AI chat models: ", err)
+	if err := models.MigrateDeviceToken(db); err != nil {
+		log.Fatal("Failed to migrate device token model: ", err)
 	}
 
 	// Setup routes

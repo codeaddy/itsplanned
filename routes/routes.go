@@ -54,15 +54,16 @@ func SetupRouter(app *common.App) *gin.Engine {
 	protected.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })
 
 	// AI Assistant routes
-	protected.POST("/ai/chat", func(c *gin.Context) { handlers.StartAIChat(c, app.DB) })
-	protected.POST("/ai/message", func(c *gin.Context) { handlers.SendMessage(c, app.DB) })
-	protected.GET("/ai/chat/:id", func(c *gin.Context) { handlers.GetChatHistory(c, app.DB) })
+	protected.POST("/ai/message", func(c *gin.Context) { handlers.SendToYandexGPT(c, app.DB) })
 
 	// Google Calendar integration
 	protected.GET("/auth/google", handlers.GetGoogleOAuthURL)
 	protected.GET("/auth/google/callback", handlers.GoogleOAuthCallback)
 	protected.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
 	protected.GET("/calendar/import", func(c *gin.Context) { handlers.ImportCalendarEvents(c, app.DB) })
+
+	// Notification routes
+	protected.POST("/notifications/device-token", func(c *gin.Context) { handlers.RegisterDeviceToken(c, app.DB) })
 
 	return r
 }

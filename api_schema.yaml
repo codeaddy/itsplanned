@@ -95,6 +95,20 @@ components:
           type: string
           example: "eyJhbGciOiJIUzI1NiIs..."
 
+    RegisterDeviceTokenRequest:
+      type: object
+      required:
+        - device_token
+        - device_type
+      properties:
+        device_token:
+          type: string
+          example: "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        device_type:
+          type: string
+          example: "ios"
+          description: "Type of device (ios, android, web)"
+
     EventResponse:
       type: object
       properties:
@@ -333,6 +347,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TimeSlotSuggestion'
+
+    YandexGPTMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+          example: "user"
+        text:
+          type: string
+          example: "What theme would you suggest for a birthday party?"
+
+    YandexGPTRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/YandexGPTMessage'
+
+    YandexGPTResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "For a birthday party, I would suggest several themes..."
 
 paths:
   /register:
@@ -1064,26 +1104,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIResponse'
 
-  /ai/chat:
-    post:
-      tags:
-        - ai-assistant
-      summary: Start a new AI chat
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Chat started successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIChatResponse'
-
   /ai/message:
     post:
       tags:
         - ai-assistant
-      summary: Send message to AI assistant
+      summary: Send message to Yandex GPT
+      description: Proxy request to Yandex GPT API and return the response
       security:
         - BearerAuth: []
       requestBody:
@@ -1091,36 +1117,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SendMessageRequest'
+              $ref: '#/components/schemas/YandexGPTRequest'
       responses:
         '200':
-          description: Message sent successfully
+          description: Response from Yandex GPT
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SendMessageResponse'
-
-  /ai/chat/{id}:
-    get:
-      tags:
-        - ai-assistant
-      summary: Get chat history
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-          description: Chat ID
-      responses:
-        '200':
-          description: Chat history retrieved successfully
+                $ref: '#/components/schemas/YandexGPTResponse'
+        '400':
+          description: Invalid payload
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatHistoryResponse'
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to process message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
 
   /auth/google:
     get:
@@ -1193,6 +1215,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ImportCalendarEventsResponse'
 
+  /notifications/device-token:
+    post:
+      tags:
+        - notifications
+      summary: Register device token
+      description: Register a device token for push notifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceTokenRequest'
+      responses:
+        '200':
+          description: Device token registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to register device token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
 tags:
   - name: auth
     description: Authentication endpoints
@@ -1202,5 +1264,7 @@ tags:
     description: Event management
   - name: tasks
     description: Task management
+  - name: notifications
+    description: Push notification management
   - name: calendar
     description: Google Calendar integration 

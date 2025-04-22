@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"itsplanned/models"
 	"itsplanned/models/api"
+	"itsplanned/services/notification"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -139,10 +140,15 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 	}
 
 	userID, _ := c.Get("user_id")
-	if task.AssignedTo == nil || userID.(uint) != *task.AssignedTo {
+	userIDUint := userID.(uint)
+
+	if task.AssignedTo == nil || userIDUint != *task.AssignedTo {
 		c.JSON(http.StatusForbidden, api.APIResponse{Error: "You can only complete your own tasks"})
 		return
 	}
+
+	// Get previous completion status to check if it's being completed (not uncompleted)
+	previouslyCompleted := task.IsCompleted
 
 	// Toggle completion status
 	task.IsCompleted = !task.IsCompleted
@@ -180,6 +186,18 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 	message := "Task completed"
 	if !task.IsCompleted {
 		message = "Task uncompleted"
+	}
+
+	// If task is being marked as completed (not uncompleted), send notification to organizer
+	if !previouslyCompleted && task.IsCompleted {
+		// Send notification to the event organizer asynchronously
+		go func() {
+			err := notification.NotifyEventOrganizer(task.EventID, task.ID, task.Title, userIDUint)
+			if err != nil {
+				// Just log the error but don't fail the request
+				fmt.Printf("Error sending notification: %v\n", err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusOK, api.APIResponse{

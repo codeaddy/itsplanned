@@ -1,38 +1,5 @@
 basePath: /
 definitions:
-  api.AIChatResponse:
-    properties:
-      created_at:
-        example: "2024-03-16T12:00:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      user_id:
-        example: 1
-        type: integer
-    type: object
-  api.AIMessageResponse:
-    properties:
-      chat_id:
-        example: 1
-        type: integer
-      content:
-        example: What theme would you suggest for a birthday party?
-        type: string
-      created_at:
-        example: "2024-03-16T12:00:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      is_user:
-        example: true
-        type: boolean
-      user_id:
-        example: 1
-        type: integer
-    type: object
   api.APIResponse:
     properties:
       data:
@@ -45,13 +12,6 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/api.UserResponse'
-    type: object
-  api.ChatHistoryResponse:
-    properties:
-      messages:
-        items:
-          $ref: '#/definitions/api.AIMessageResponse'
-        type: array
     type: object
   api.CreateEventRequest:
     properties:
@@ -279,6 +239,19 @@ definitions:
         example: John Doe
         type: string
     type: object
+  api.RegisterDeviceTokenRequest:
+    properties:
+      device_token:
+        example: 6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b
+        type: string
+      device_type:
+        description: ios, android, web
+        example: ios
+        type: string
+    required:
+    - device_token
+    - device_type
+    type: object
   api.RegisterRequest:
     properties:
       email:
@@ -316,23 +289,6 @@ definitions:
     - expiry
     - refresh_token
     - user_id
-    type: object
-  api.SendMessageRequest:
-    properties:
-      chat_id:
-        example: 1
-        type: integer
-      message:
-        example: What theme would you suggest for a birthday party?
-        type: string
-    type: object
-  api.SendMessageResponse:
-    properties:
-      message:
-        example: Message sent
-        type: string
-      response:
-        $ref: '#/definitions/api.AIMessageResponse'
     type: object
   api.TaskResponse:
     properties:
@@ -427,6 +383,28 @@ definitions:
         example: "2024-03-16T12:00:00Z"
         type: string
     type: object
+  api.YandexGPTMessage:
+    properties:
+      role:
+        example: user
+        type: string
+      text:
+        example: What theme would you suggest for a birthday party?
+        type: string
+    type: object
+  api.YandexGPTRequest:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/api.YandexGPTMessage'
+        type: array
+    type: object
+  api.YandexGPTResponse:
+    properties:
+      message:
+        example: For a birthday party, I would suggest several themes...
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -442,90 +420,25 @@ info:
   title: ItsPlanned API
   version: "1.0"
 paths:
-  /ai/chat:
-    post:
-      description: Create a new AI chat session for the user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Chat started successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.AIChatResponse'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "500":
-          description: Failed to start chat
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Start a new AI chat
-      tags:
-      - ai-assistant
-  /ai/chat/{id}:
-    get:
-      description: Get the message history for a specific chat
-      parameters:
-      - description: Chat ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Chat history retrieved successfully
-          schema:
-            $ref: '#/definitions/api.ChatHistoryResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "403":
-          description: Forbidden - not your chat
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "404":
-          description: Chat not found
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "500":
-          description: Failed to fetch messages
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Get chat history
-      tags:
-      - ai-assistant
   /ai/message:
     post:
       consumes:
       - application/json
-      description: Send a message to the AI assistant and get a response
+      description: Proxy request to Yandex GPT API and return the response
       parameters:
-      - description: Message details
+      - description: Dialog history to send to Yandex GPT
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.SendMessageRequest'
+          $ref: '#/definitions/api.YandexGPTRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Message sent and response received
+          description: Response from Yandex GPT
           schema:
-            $ref: '#/definitions/api.SendMessageResponse'
+            $ref: '#/definitions/api.YandexGPTResponse'
         "400":
           description: Invalid payload
           schema:
@@ -540,7 +453,7 @@ paths:
             $ref: '#/definitions/api.APIResponse'
       security:
       - BearerAuth: []
-      summary: Send message to AI assistant
+      summary: Send message to Yandex GPT
       tags:
       - ai-assistant
   /auth/google:
@@ -1054,6 +967,42 @@ paths:
       summary: User logout
       tags:
       - auth
+  /notifications/device-token:
+    post:
+      consumes:
+      - application/json
+      description: Register a device token for push notifications
+      parameters:
+      - description: Device token registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.RegisterDeviceTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device token registered successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to register device token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Register device token
+      tags:
+      - notifications
   /password/reset:
     post:
       consumes:
@@ -1478,3 +1427,6 @@ tags:
   name: ai-assistant
 - description: Google Calendar integration endpoints for importing events
   name: calendar
+- description: Push notification endpoints for registering device tokens and managing
+    notification preferences
+  name: notifications
