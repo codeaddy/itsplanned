@@ -37,6 +37,51 @@ components:
           type: object
           description: "Optional data payload"
 
+    GoogleOAuthURLResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          example: "https://accounts.google.com/o/oauth2/auth?..."
+          description: "Google OAuth authorization URL"
+
+    GoogleOAuthCallbackResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "ya29.a0AfB_byC..."
+          description: "OAuth access token"
+        refresh_token:
+          type: string
+          example: "1//04dK..."
+          description: "OAuth refresh token for future token refreshes"
+        expiry:
+          type: string
+          format: date-time
+          example: "2024-03-16T15:04:05Z"
+          description: "Token expiry timestamp"
+
+    SaveOAuthTokenRequest:
+      type: object
+      required:
+        - access_token
+        - expiry
+      properties:
+        access_token:
+          type: string
+          example: "ya29.a0AfB_byC..."
+          description: "OAuth access token"
+        refresh_token:
+          type: string
+          example: "1//04dK..."
+          description: "OAuth refresh token"
+        expiry:
+          type: string
+          format: date-time
+          example: "2024-03-16T15:04:05Z"
+          description: "Token expiry timestamp"
+
     UserResponse:
       type: object
       properties:
@@ -373,6 +418,53 @@ components:
         message:
           type: string
           example: "For a birthday party, I would suggest several themes..."
+
+    ImportCalendarEventsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Events imported successfully"
+
+    TaskStatusEventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        task_id:
+          type: integer
+          example: 5
+        task_name:
+          type: string
+          example: "Buy decorations"
+        old_status:
+          type: string
+          example: "unassigned"
+        new_status:
+          type: string
+          example: "assigned"
+        changed_by_id:
+          type: integer
+          example: 2
+        changed_by_name:
+          type: string
+          example: "John Doe"
+        is_read:
+          type: boolean
+          example: false
+        event_time:
+          type: string
+          format: date-time
+          example: "2024-03-16T12:00:00Z"
+
+    TaskStatusEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskStatusEventResponse'
 
 paths:
   /register:
@@ -1144,13 +1236,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIResponse'
 
+  /task-status-events/unread:
+    get:
+      tags:
+        - notifications
+      summary: Get unread task status events
+      description: Retrieve a list of unread task status events
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of unread task status events retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatusEventsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
   /auth/google:
     get:
       tags:
         - calendar
       summary: Get Google OAuth URL
+      description: Get the URL for Google OAuth authorization
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: redirect_uri
+          schema:
+            type: string
+          required: false
+          description: "Custom redirect URI to override the default"
+          example: "itsplanned://callback"
       responses:
         '200':
           description: OAuth URL generated successfully
@@ -1158,12 +1287,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GoogleOAuthURLResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
 
   /auth/google/callback:
     get:
       tags:
         - calendar
       summary: Google OAuth callback
+      description: Handle the callback from Google OAuth and exchange code for tokens
       parameters:
         - in: query
           name: code
@@ -1171,6 +1307,20 @@ paths:
           schema:
             type: string
           description: Authorization code from Google
+        - in: query
+          name: redirect_uri
+          schema:
+            type: string
+          required: false
+          description: "Custom redirect URI that matches the one used in the auth request"
+          example: "itsplanned://callback"
+        - in: query
+          name: app_redirect
+          schema:
+            type: string
+          required: false
+          description: "Deeplink URI to redirect to after OAuth"
+          example: "itsplanned://callback/auth"
       responses:
         '200':
           description: Tokens received successfully
@@ -1178,6 +1328,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GoogleOAuthCallbackResponse'
+        '302':
+          description: Redirect to app with tokens
+        '400':
+          description: Authorization code not provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to get access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /auth/web-to-app:
+    get:
+      tags:
+        - calendar
+      summary: OAuth Web to App Redirect
+      description: Redirects from web OAuth flow to mobile app via deeplink
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+        - in: query
+          name: state
+          schema:
+            type: string
+          required: false
+          description: "State parameter for security"
+      responses:
+        '302':
+          description: Redirect to app deeplink
 
   /auth/oauth/save:
     post:
@@ -1205,6 +1392,7 @@ paths:
       tags:
         - calendar
       summary: Import Google Calendar events
+      description: Import events from the user's Google Calendar for the next 4 weeks and save them to the database. This endpoint requires OAuth tokens to have been previously saved using the /auth/oauth/save endpoint.
       security:
         - BearerAuth: []
       responses:
@@ -1214,6 +1402,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportCalendarEventsResponse'
+        '401':
+          description: Unauthorized or no OAuth tokens found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to import events (token decryption error, Google API error, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
 
   /notifications/device-token:
     post:
@@ -1257,14 +1457,16 @@ paths:
 
 tags:
   - name: auth
-    description: Authentication endpoints
+    description: User registration, login, and authentication
   - name: profile
     description: User profile management
   - name: events
-    description: Event management
+    description: Event management and planning
   - name: tasks
-    description: Task management
-  - name: notifications
-    description: Push notification management
+    description: Task creation, assignment, and completion
   - name: calendar
-    description: Google Calendar integration 
+    description: Google Calendar integration and time slot suggestions
+  - name: ai-assistant
+    description: AI Assistant and Yandex GPT integration
+  - name: notifications
+    description: Notification management and notification events 

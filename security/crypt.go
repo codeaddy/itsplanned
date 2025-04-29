@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-// Декодирует Base64 ключ в []byte для AES
+// Decode base64 key into []byte for AES
 func DecodeKey() ([]byte, error) {
 	base64Key := os.Getenv("AES_SECRET")
 	key, err := base64.StdEncoding.DecodeString(base64Key)

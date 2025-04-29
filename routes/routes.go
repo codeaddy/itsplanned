@@ -53,6 +53,9 @@ func SetupRouter(app *common.App) *gin.Engine {
 	protected.PUT("/tasks/:id/assign", func(c *gin.Context) { handlers.AssignToTask(c, app.DB) })
 	protected.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })
 
+	// Task status events routes
+	protected.GET("/task-status-events/unread", func(c *gin.Context) { handlers.GetUnreadTaskStatusEvents(c, app.DB) })
+
 	// AI Assistant routes
 	protected.POST("/ai/message", func(c *gin.Context) { handlers.SendToYandexGPT(c, app.DB) })
 
@@ -62,8 +65,8 @@ func SetupRouter(app *common.App) *gin.Engine {
 	protected.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
 	protected.GET("/calendar/import", func(c *gin.Context) { handlers.ImportCalendarEvents(c, app.DB) })
 
-	// Notification routes
-	protected.POST("/notifications/device-token", func(c *gin.Context) { handlers.RegisterDeviceToken(c, app.DB) })
+	// OAuth web to app redirection - make this public
+	r.GET("/auth/web-to-app", handlers.WebToAppRedirect)
 
 	return r
 }

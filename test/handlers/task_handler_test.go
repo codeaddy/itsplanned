@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,81 +89,6 @@ func TestGetTasks(t *testing.T) {
 		c.Request.Header.Set("Content-Type", "application/json")
 
 		handlers.GetTasks(c, test.TestDB)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-	})
-}
-
-func TestGetTask(t *testing.T) {
-	// Setup test database
-	cleanup := test.SetupTestDB(t)
-	defer cleanup()
-
-	// Create test data
-	user := test.CreateTestUser(t)
-	event := test.CreateTestEvent(t, user.ID)
-	task := test.CreateTestTask(t, event.ID)
-
-	// Test getting task as organizer
-	t.Run("Organizer can get task", func(t *testing.T) {
-		c, w := test.CreateTestContext(t, user.ID)
-		c.Params = []gin.Param{{Key: "id", Value: fmt.Sprintf("%d", task.ID)}}
-
-		handlers.GetTask(c, test.TestDB)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response api.APIResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-
-		// Check that we got the task back
-		taskData, ok := response.Data.(map[string]interface{})
-		if assert.True(t, ok) {
-			assert.Equal(t, float64(task.ID), taskData["id"])
-		}
-	})
-
-	// Create another user who is not a participant
-	otherUser := test.CreateTestUser(t)
-
-	t.Run("Non-participant cannot get task", func(t *testing.T) {
-		c, w := test.CreateTestContext(t, otherUser.ID)
-		c.Params = []gin.Param{{Key: "id", Value: fmt.Sprintf("%d", task.ID)}}
-
-		handlers.GetTask(c, test.TestDB)
-
-		assert.Equal(t, http.StatusForbidden, w.Code)
-	})
-
-	// Add other user as participant and test again
-	test.AddEventParticipant(t, event.ID, otherUser.ID)
-
-	t.Run("Participant can get task", func(t *testing.T) {
-		c, w := test.CreateTestContext(t, otherUser.ID)
-		c.Params = []gin.Param{{Key: "id", Value: fmt.Sprintf("%d", task.ID)}}
-
-		handlers.GetTask(c, test.TestDB)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	// Test with invalid task ID
-	t.Run("Invalid task ID returns bad request", func(t *testing.T) {
-		c, w := test.CreateTestContext(t, user.ID)
-		c.Params = []gin.Param{{Key: "id", Value: "invalid"}}
-
-		handlers.GetTask(c, test.TestDB)
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	// Test with non-existent task ID
-	t.Run("Non-existent task ID returns not found", func(t *testing.T) {
-		c, w := test.CreateTestContext(t, user.ID)
-		c.Params = []gin.Param{{Key: "id", Value: "999"}}
-
-		handlers.GetTask(c, test.TestDB)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})

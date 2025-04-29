@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Получение событий из Google Calendar
+// Fetching Google Calendars events
 func FetchGoogleCalendarEventsHandler(c *gin.Context) {
 	var payload struct {
 		AccessToken string `json:"access_token"`

@@ -4,10 +4,10 @@ import "gorm.io/gorm"
 
 type UserToken struct {
 	ID           uint   `gorm:"primaryKey"`
-	UserID       uint   `gorm:"not null"` // Владелец токена
-	AccessToken  string `gorm:"not null"` // Зашифрованный токен
-	RefreshToken string `gorm:"not null"` // Зашифрованный refresh-токен
-	Expiry       string `gorm:"not null"` // Срок действия токена
+	UserID       uint   `gorm:"not null"`
+	AccessToken  string `gorm:"not null"`
+	RefreshToken string `gorm:"not null"`
+	Expiry       string `gorm:"not null"`
 }
 
 func MigrateToken(db *gorm.DB) error {

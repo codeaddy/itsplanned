@@ -5,7 +5,6 @@ import (
 	"itsplanned/models"
 	"itsplanned/routes"
 	"itsplanned/services/email"
-	"itsplanned/services/notification"
 	"log"
 	"os"
 
@@ -81,10 +80,6 @@ func main() {
 		log.Fatal("Error initializing email service:", err)
 	}
 
-	if err := notification.Init(db); err != nil {
-		log.Fatal("Error initializing notification service:", err)
-	}
-
 	// Run database migrations
 	if err := models.MigrateUser(db); err != nil {
 		log.Fatal("Failed to migrate user model: ", err)
@@ -107,8 +102,11 @@ func main() {
 	if err := models.MigratePasswordReset(db); err != nil {
 		log.Fatal("Failed to migrate password reset model: ", err)
 	}
-	if err := models.MigrateDeviceToken(db); err != nil {
-		log.Fatal("Failed to migrate device token model: ", err)
+	if err := models.MigrateTaskStatusEvent(db); err != nil {
+		log.Fatal("Failed to migrate task status event model: ", err)
+	}
+	if err := models.MigrateAIChat(db); err != nil {
+		log.Fatal("Failed to migrate AI chat model: ", err)
 	}
 
 	// Setup routes

@@ -18,20 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func toCalendarEventResponse(event *models.CalendarEvent) *api.CalendarEventResponse {
-	if event == nil {
-		return nil
-	}
-	return &api.CalendarEventResponse{
-		ID:        event.ID,
-		UserID:    event.UserID,
-		Title:     event.Title,
-		StartTime: event.StartTime,
-		EndTime:   event.EndTime,
-	}
-}
-
-// Создает HTTP-клиент с OAuth-токеном
+// Creates HTTP-client with OAuth-token
 func getGoogleClient(ctx context.Context, accessToken string) *http.Client {
 	config := &oauth2.Config{
 		Endpoint: google.Endpoint,
@@ -107,7 +94,7 @@ func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 		}
 		endTime = endTime.In(time.FixedZone("MSK", 3*60*60))
 
-		// Проверяем, нет ли уже этого события в БД (по названию и времени)
+		// Check if event already exists (with given title and start_time)
 		var existingEvent models.CalendarEvent
 		if err := db.Where("user_id = ? AND title = ? AND start_time = ?", userID, item.Summary, startTime).First(&existingEvent).Error; err == nil {
 			continue

@@ -30,10 +30,6 @@ func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 	}
 
 	userID, _ := c.Get("user_id")
-	if userID != request.UserID {
-		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "You should save only your tokens"})
-		return
-	}
 
 	hashedAccessToken, err := security.EncryptToken(request.AccessToken)
 	if err != nil {

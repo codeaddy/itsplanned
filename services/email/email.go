@@ -26,7 +26,6 @@ func Init() error {
 		FromEmail:    os.Getenv("FROM_EMAIL"),
 	}
 
-	// Validate required configuration
 	if config.SMTPHost == "" || config.SMTPPort == "" ||
 		config.SMTPUsername == "" || config.SMTPPassword == "" ||
 		config.FromEmail == "" {
@@ -37,33 +36,28 @@ func Init() error {
 }
 
 func SendPasswordResetEmail(toEmail, resetToken string) error {
-	// Configure TLS for Yandex
 	tlsConfig := &tls.Config{
 		ServerName: config.SMTPHost,
 		MinVersion: tls.VersionTLS12,
 	}
 
-	// Connect to Yandex SMTP server with TLS
 	conn, err := tls.Dial("tcp", config.SMTPHost+":"+config.SMTPPort, tlsConfig)
 	if err != nil {
 		return fmt.Errorf("failed to establish TLS connection: %v", err)
 	}
 	defer conn.Close()
 
-	// Create SMTP client
 	client, err := smtp.NewClient(conn, config.SMTPHost)
 	if err != nil {
 		return fmt.Errorf("failed to create SMTP client: %v", err)
 	}
 	defer client.Close()
 
-	// Auth - Yandex requires authentication before any other commands
 	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
 	if err = client.Auth(auth); err != nil {
 		return fmt.Errorf("failed to authenticate: %v", err)
 	}
 
-	// Set the sender and recipient
 	if err = client.Mail(config.FromEmail); err != nil {
 		return fmt.Errorf("failed to set sender: %v", err)
 	}
@@ -71,14 +65,12 @@ func SendPasswordResetEmail(toEmail, resetToken string) error {
 		return fmt.Errorf("failed to set recipient: %v", err)
 	}
 
-	// Send the email body
 	writer, err := client.Data()
 	if err != nil {
 		return fmt.Errorf("failed to create data writer: %v", err)
 	}
 	defer writer.Close()
 
-	// Compose email with UTF-8 encoding for Russian language support
 	subject := "Password Reset Request"
 	resetLink := fmt.Sprintf("http://localhost:8080/reset-password?token=%s", resetToken)
 	body := fmt.Sprintf(`

@@ -4,12 +4,23 @@ import (
 	"fmt"
 	"itsplanned/models"
 	"itsplanned/models/api"
-	"itsplanned/services/notification"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// Helper function to get a user's display name by ID
+func getUserDisplayName(db *gorm.DB, userID uint) string {
+	var user models.User
+	if err := db.First(&user, userID).Error; err != nil {
+		// If we can't find the user, return a default name
+		return "Unknown User"
+	}
+	return user.DisplayName
+}
 
 func toTaskResponse(task *models.Task) *api.TaskResponse {
 	if task == nil {
@@ -90,32 +101,58 @@ func AssignToTask(c *gin.Context, db *gorm.DB) {
 	userID, _ := c.Get("user_id")
 	userIDUint := userID.(uint)
 
+	// Get the event to determine the organizer
+	var event models.Event
+	if err := db.First(&event, task.EventID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to retrieve event"})
+		return
+	}
+
+	var oldStatus string
+	var newStatus string
+
 	// Check if user is already assigned to the task
 	if task.AssignedTo != nil && *task.AssignedTo == userIDUint {
 		// Unassign the user
+		oldStatus = "assigned"
+		newStatus = "unassigned"
 		task.AssignedTo = nil
 		db.Save(&task)
 		c.JSON(http.StatusOK, api.APIResponse{
 			Message: "You have been unassigned from the task",
 			Data:    toTaskResponse(&task),
 		})
-		return
-	}
-
-	// Check if task is already assigned to someone else
-	if task.AssignedTo != nil && *task.AssignedTo != userIDUint {
+	} else if task.AssignedTo != nil && *task.AssignedTo != userIDUint {
 		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Task already assigned to another user"})
 		return
+	} else {
+		// Assign the user
+		oldStatus = "unassigned"
+		newStatus = "assigned"
+		task.AssignedTo = &userIDUint
+		db.Save(&task)
+		c.JSON(http.StatusOK, api.APIResponse{
+			Message: "You have been assigned to the task",
+			Data:    toTaskResponse(&task),
+		})
 	}
 
-	// Assign the user
-	task.AssignedTo = &userIDUint
-	db.Save(&task)
+	// Create task status event
+	taskStatusEvent := models.TaskStatusEvent{
+		TaskID:        task.ID,
+		TaskName:      task.Title,
+		OldStatus:     oldStatus,
+		NewStatus:     newStatus,
+		UserID:        event.OrganizerID,
+		ChangedByID:   userIDUint,
+		ChangedByName: getUserDisplayName(db, userIDUint),
+		IsRead:        false,
+		EventTime:     time.Now(),
+	}
 
-	c.JSON(http.StatusOK, api.APIResponse{
-		Message: "You have been assigned to the task",
-		Data:    toTaskResponse(&task),
-	})
+	if err := db.Create(&taskStatusEvent).Error; err != nil {
+		log.Printf("Failed to create task status event: %v", err)
+	}
 }
 
 // @Summary Toggle task completion
@@ -147,10 +184,25 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Get previous completion status to check if it's being completed (not uncompleted)
-	previouslyCompleted := task.IsCompleted
+	// Get the event to determine the organizer
+	var event models.Event
+	if err := db.First(&event, task.EventID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to retrieve event"})
+		return
+	}
+
+	var oldStatus string
+	var newStatus string
 
 	// Toggle completion status
+	if task.IsCompleted {
+		oldStatus = "completed"
+		newStatus = "assigned"
+	} else {
+		oldStatus = "assigned"
+		newStatus = "completed"
+	}
+
 	task.IsCompleted = !task.IsCompleted
 	db.Save(&task)
 
@@ -183,21 +235,27 @@ func CompleteTask(c *gin.Context, db *gorm.DB) {
 		db.Save(&eventScore)
 	}
 
+	// Create task status event
+	taskStatusEvent := models.TaskStatusEvent{
+		TaskID:        task.ID,
+		TaskName:      task.Title,
+		OldStatus:     oldStatus,
+		NewStatus:     newStatus,
+		UserID:        event.OrganizerID,
+		ChangedByID:   userIDUint,
+		ChangedByName: getUserDisplayName(db, userIDUint),
+		IsRead:        false,
+		EventTime:     time.Now(),
+	}
+
+	if err := db.Create(&taskStatusEvent).Error; err != nil {
+		// Log the error but don't fail the request
+		log.Printf("Failed to create task status event: %v", err)
+	}
+
 	message := "Task completed"
 	if !task.IsCompleted {
 		message = "Task uncompleted"
-	}
-
-	// If task is being marked as completed (not uncompleted), send notification to organizer
-	if !previouslyCompleted && task.IsCompleted {
-		// Send notification to the event organizer asynchronously
-		go func() {
-			err := notification.NotifyEventOrganizer(task.EventID, task.ID, task.Title, userIDUint)
-			if err != nil {
-				// Just log the error but don't fail the request
-				fmt.Printf("Error sending notification: %v\n", err)
-			}
-		}()
 	}
 
 	c.JSON(http.StatusOK, api.APIResponse{

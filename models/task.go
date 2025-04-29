@@ -7,10 +7,10 @@ type Task struct {
 	Title       string  `gorm:"not null"`
 	Description string  `gorm:"default:''"`
 	IsCompleted bool    `gorm:"default:false"`
-	Budget      float64 `gorm:"not null"` // Начальный бюджет
-	Points      int     `gorm:"not null"` // Баллы за задачу
+	Budget      float64 `gorm:"not null"`
+	Points      int     `gorm:"not null"`
 	EventID     uint    `gorm:"not null"`
-	AssignedTo  *uint   `gorm:"default:null"` // Исполнитель задачи
+	AssignedTo  *uint   `gorm:"default:null"`
 }
 
 func MigrateTask(db *gorm.DB) error {

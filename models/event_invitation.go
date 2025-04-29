@@ -19,7 +19,7 @@ func GenerateUniqueInviteCode(db *gorm.DB) string {
 		rand.Read(b)
 		code := base64.URLEncoding.EncodeToString(b)
 
-		// Проверяем, есть ли сгенерированный код в базе
+		// Check if generated code already in the base
 		var existing EventInvitation
 		if err := db.Where("invite_code = ?", code).First(&existing).Error; err != nil {
 			return code

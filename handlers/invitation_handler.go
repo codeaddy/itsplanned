@@ -29,7 +29,6 @@ func GenerateInviteLink(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// TODO Только создатель должен иметь возможность приглашать людей
 	var event models.Event
 	if err := db.First(&event, request.EventID).Error; err != nil {
 		c.JSON(http.StatusNotFound, api.APIResponse{Error: "Event not found"})

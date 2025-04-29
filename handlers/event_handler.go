@@ -34,7 +34,6 @@ func toEventResponse(event *models.Event) *api.EventResponse {
 
 func getUserBusySlotsForDay(db *gorm.DB, userID uint, date string, busySlots *map[string]int) {
 	var events []models.CalendarEvent
-	// dateCasted, _ := time.Parse("2006-01-02", date)
 	db.Where("user_id = ? AND DATE(start_time) = ?", userID, date).Find(&events)
 
 	fmt.Println(len(events))

@@ -239,19 +239,6 @@ definitions:
         example: John Doe
         type: string
     type: object
-  api.RegisterDeviceTokenRequest:
-    properties:
-      device_token:
-        example: 6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b
-        type: string
-      device_type:
-        description: ios, android, web
-        example: ios
-        type: string
-    required:
-    - device_token
-    - device_type
-    type: object
   api.RegisterRequest:
     properties:
       email:
@@ -281,14 +268,9 @@ definitions:
       refresh_token:
         example: 1//04dK...
         type: string
-      user_id:
-        example: 1
-        type: integer
     required:
     - access_token
     - expiry
-    - refresh_token
-    - user_id
     type: object
   api.TaskResponse:
     properties:
@@ -316,6 +298,43 @@ definitions:
       title:
         example: Buy decorations
         type: string
+    type: object
+  api.TaskStatusEventResponse:
+    properties:
+      changed_by_id:
+        example: 2
+        type: integer
+      changed_by_name:
+        example: John Doe
+        type: string
+      event_time:
+        example: "2024-03-16T12:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_read:
+        example: false
+        type: boolean
+      new_status:
+        example: assigned
+        type: string
+      old_status:
+        example: unassigned
+        type: string
+      task_id:
+        example: 5
+        type: integer
+      task_name:
+        example: Buy decorations
+        type: string
+    type: object
+  api.TaskStatusEventsResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/api.TaskStatusEventResponse'
+        type: array
     type: object
   api.TimeSlotSuggestion:
     properties:
@@ -459,6 +478,11 @@ paths:
   /auth/google:
     get:
       description: Get the URL for Google OAuth authorization
+      parameters:
+      - description: Custom redirect URI
+        in: query
+        name: redirect_uri
+        type: string
       produces:
       - application/json
       responses:
@@ -484,6 +508,14 @@ paths:
         name: code
         required: true
         type: string
+      - description: Custom redirect URI
+        in: query
+        name: redirect_uri
+        type: string
+      - description: Deeplink URI to redirect to after OAuth
+        in: query
+        name: app_redirect
+        type: string
       produces:
       - application/json
       responses:
@@ -491,6 +523,10 @@ paths:
           description: Tokens received successfully
           schema:
             $ref: '#/definitions/api.GoogleOAuthCallbackResponse'
+        "302":
+          description: Redirect to app with tokens
+          schema:
+            type: string
         "400":
           description: Authorization code not provided
           schema:
@@ -532,6 +568,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Save OAuth tokens
+      tags:
+      - calendar
+  /auth/web-to-app:
+    get:
+      description: Redirects from web OAuth flow to mobile app via deeplink
+      parameters:
+      - description: Authorization code from Google
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State parameter for security
+        in: query
+        name: state
+        type: string
+      produces:
+      - text/html
+      responses:
+        "302":
+          description: Redirect to app deeplink
+          schema:
+            type: string
+      summary: OAuth Web to App Redirect
       tags:
       - calendar
   /calendar/import:
@@ -967,42 +1026,6 @@ paths:
       summary: User logout
       tags:
       - auth
-  /notifications/device-token:
-    post:
-      consumes:
-      - application/json
-      description: Register a device token for push notifications
-      parameters:
-      - description: Device token registration details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.RegisterDeviceTokenRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device token registered successfully
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-        "500":
-          description: Failed to register device token
-          schema:
-            $ref: '#/definitions/api.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Register device token
-      tags:
-      - notifications
   /password/reset:
     post:
       consumes:
@@ -1147,6 +1170,29 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /task-status-events/unread:
+    get:
+      description: Get all unread task status events for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unread task status events retrieved successfully
+          schema:
+            $ref: '#/definitions/api.TaskStatusEventsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get unread task status events
+      tags:
+      - events
   /tasks:
     get:
       description: Get a list of all tasks associated with a specific event

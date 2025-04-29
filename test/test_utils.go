@@ -29,10 +29,13 @@ func SetupTestDB(t *testing.T) func() {
 		&models.User{},
 		&models.Event{},
 		&models.Task{},
+		&models.UserToken{},
+		&models.EventInvitation{},
 		&models.EventParticipation{},
-		&models.EventScore{},
-		&models.CalendarEvent{},
+		&models.PasswordReset{},
+		&models.TaskStatusEvent{},
 		&models.AIChat{},
+		&models.CalendarEvent{},
 		&models.AIMessage{},
 	)
 	if err != nil {

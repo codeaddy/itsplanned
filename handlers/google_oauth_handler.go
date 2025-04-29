@@ -4,6 +4,7 @@ import (
 	"itsplanned/auth"
 	"itsplanned/models/api"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,11 +14,13 @@ import (
 // @Tags calendar
 // @Produce json
 // @Security BearerAuth
+// @Param redirect_uri query string false "Custom redirect URI"
 // @Success 200 {object} api.GoogleOAuthURLResponse "OAuth URL generated successfully"
 // @Failure 401 {object} api.APIResponse "Unauthorized"
 // @Router /auth/google [get]
 func GetGoogleOAuthURL(c *gin.Context) {
-	url := auth.GetGoogleOAuthURL("randomState")
+	redirectURI := c.Query("redirect_uri")
+	url := auth.GetGoogleOAuthURL("randomState", redirectURI)
 	c.JSON(http.StatusOK, api.GoogleOAuthURLResponse{URL: url})
 }
 
@@ -26,7 +29,10 @@ func GetGoogleOAuthURL(c *gin.Context) {
 // @Tags calendar
 // @Produce json
 // @Param code query string true "Authorization code from Google"
+// @Param redirect_uri query string false "Custom redirect URI"
+// @Param app_redirect query string false "Deeplink URI to redirect to after OAuth"
 // @Success 200 {object} api.GoogleOAuthCallbackResponse "Tokens received successfully"
+// @Success 302 {string} string "Redirect to app with tokens"
 // @Failure 400 {object} api.APIResponse "Authorization code not provided"
 // @Failure 500 {object} api.APIResponse "Failed to get access token"
 // @Router /auth/google/callback [get]
@@ -37,15 +43,66 @@ func GoogleOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.ExchangeCodeForToken(code)
+	redirectURI := c.Query("redirect_uri")
+	token, err := auth.ExchangeCodeForToken(code, redirectURI)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to get access token"})
 		return
 	}
 
+	// Check if we need to redirect to an app deeplink
+	appRedirect := c.Query("app_redirect")
+	if appRedirect != "" {
+		// Create a URL with the tokens as query parameters
+		appURL, err := url.Parse(appRedirect)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid app redirect URL"})
+			return
+		}
+
+		// Add the tokens as query parameters
+		q := appURL.Query()
+		q.Add("access_token", token.AccessToken)
+		q.Add("refresh_token", token.RefreshToken)
+		q.Add("expiry", token.Expiry.Format("2006-01-02T15:04:05Z07:00"))
+		appURL.RawQuery = q.Encode()
+
+		// Redirect to the app
+		c.Redirect(http.StatusFound, appURL.String())
+		return
+	}
+
+	// If no app redirect, return JSON response
 	c.JSON(http.StatusOK, api.GoogleOAuthCallbackResponse{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		Expiry:       token.Expiry,
 	})
+}
+
+// @Summary OAuth Web to App Redirect
+// @Description Redirects from web OAuth flow to mobile app via deeplink
+// @Tags calendar
+// @Produce html
+// @Param code query string true "Authorization code from Google"
+// @Param state query string false "State parameter for security"
+// @Success 302 {string} string "Redirect to app deeplink"
+// @Router /auth/web-to-app [get]
+func WebToAppRedirect(c *gin.Context) {
+	// Get the authorization code from Google
+	code := c.Query("code")
+	state := c.Query("state")
+
+	appURI := "itsplanned://callback/auth"
+
+	// Pass the code and state to the app so it can exchange them for tokens
+	appURL, _ := url.Parse(appURI)
+	q := appURL.Query()
+	q.Add("code", code)
+	if state != "" {
+		q.Add("state", state)
+	}
+	appURL.RawQuery = q.Encode()
+
+	c.Redirect(http.StatusFound, appURL.String())
 }

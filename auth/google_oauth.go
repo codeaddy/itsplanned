@@ -9,24 +9,49 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-// Конфигурация для OAuth 2.0
+// Config for OAuth 2.0
 var GoogleOAuthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	RedirectURL:  "http://localhost:8080/auth/web-to-app",
 	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 	Scopes:       []string{"https://www.googleapis.com/auth/calendar.readonly"},
 	Endpoint:     google.Endpoint,
 }
 
-// Генерация ссылки для авторизации пользователя через Google OAuth
-func GetGoogleOAuthURL(state string) string {
-	return GoogleOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+// Google OAuth URL generation
+func GetGoogleOAuthURL(state string, redirectURI string) string {
+	config := &oauth2.Config{
+		ClientID:     GoogleOAuthConfig.ClientID,
+		ClientSecret: GoogleOAuthConfig.ClientSecret,
+		Endpoint:     GoogleOAuthConfig.Endpoint,
+		RedirectURL:  GoogleOAuthConfig.RedirectURL,
+		Scopes:       GoogleOAuthConfig.Scopes,
+	}
+
+	if redirectURI != "" {
+		config.RedirectURL = redirectURI
+	}
+
+	return config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
-// Обмен кода авторизации на access_token
-func ExchangeCodeForToken(code string) (*oauth2.Token, error) {
+// Exchange auth code on access_token
+func ExchangeCodeForToken(code string, redirectURI string) (*oauth2.Token, error) {
 	ctx := context.Background()
-	token, err := GoogleOAuthConfig.Exchange(ctx, code)
+
+	config := &oauth2.Config{
+		ClientID:     GoogleOAuthConfig.ClientID,
+		ClientSecret: GoogleOAuthConfig.ClientSecret,
+		Endpoint:     GoogleOAuthConfig.Endpoint,
+		RedirectURL:  GoogleOAuthConfig.RedirectURL,
+		Scopes:       GoogleOAuthConfig.Scopes,
+	}
+
+	if redirectURI != "" {
+		config.RedirectURL = redirectURI
+	}
+
+	token, err := config.Exchange(ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %v", err)
 	}

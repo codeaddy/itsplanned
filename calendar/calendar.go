@@ -10,7 +10,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Получает события пользователя через Google Calendar API
+// Fetching user events from Google Calendar
 func FetchGoogleCalendarEvents(accessToken string, startDate, endDate time.Time) ([]*calendar.Event, error) {
 	ctx := context.Background()
 

@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env*
+README.md
+test/
+docs/
+.DS_Store
+itsplanned
+.github/ 

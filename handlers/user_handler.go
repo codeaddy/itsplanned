@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"itsplanned/models"
 	"itsplanned/models/api"
 	"itsplanned/security"
@@ -74,24 +75,24 @@ func Register(c *gin.Context, db *gorm.DB) {
 func Login(c *gin.Context, db *gorm.DB) {
 	var request api.LoginRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid payload"})
+		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Некорректные параметры запроса"})
 		return
 	}
 
 	var user models.User
 	if err := db.Where("email = ?", request.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "Неверные данные для входа"})
 		return
 	}
 
 	if !security.ComparePassword(user.PasswordHash, request.Password) {
-		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "Неверные данные для входа"})
 		return
 	}
 
 	token, err := security.GenerateToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Не удалось сгенерировать токен"})
 		return
 	}
 
@@ -134,6 +135,8 @@ func RequestPasswordReset(c *gin.Context, db *gorm.DB) {
 		ExpiryTime: expiryTime,
 	}
 	db.Create(&passwordReset)
+
+	fmt.Println("token is:", resetToken)
 
 	// Send email with reset link
 	err := email.SendPasswordResetEmail(user.Email, resetToken)

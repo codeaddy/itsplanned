@@ -95,6 +95,14 @@ const docTemplate = `{
                     "calendar"
                 ],
                 "summary": "Get Google OAuth URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Custom redirect URI",
+                        "name": "redirect_uri",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OAuth URL generated successfully",
@@ -128,6 +136,18 @@ const docTemplate = `{
                         "name": "code",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Custom redirect URI",
+                        "name": "redirect_uri",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deeplink URI to redirect to after OAuth",
+                        "name": "app_redirect",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -135,6 +155,12 @@ const docTemplate = `{
                         "description": "Tokens received successfully",
                         "schema": {
                             "$ref": "#/definitions/api.GoogleOAuthCallbackResponse"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to app with tokens",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -198,6 +224,41 @@ const docTemplate = `{
                         "description": "Failed to save token",
                         "schema": {
                             "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/web-to-app": {
+            "get": {
+                "description": "Redirects from web OAuth flow to mobile app via deeplink",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "OAuth Web to App Redirect",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization code from Google",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "State parameter for security",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to app deeplink",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -899,63 +960,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/notifications/device-token": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Register a device token for push notifications",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "notifications"
-                ],
-                "summary": "Register device token",
-                "parameters": [
-                    {
-                        "description": "Device token registration details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api.RegisterDeviceTokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Device token registered successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to register device token",
-                        "schema": {
-                            "$ref": "#/definitions/api.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/password/reset": {
             "post": {
                 "description": "Reset user password using a valid reset token",
@@ -1173,6 +1177,43 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to hash password",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/task-status-events/unread": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all unread task status events for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Get unread task status events",
+                "responses": {
+                    "200": {
+                        "description": "Unread task status events retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskStatusEventsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/api.APIResponse"
                         }
@@ -1948,24 +1989,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RegisterDeviceTokenRequest": {
-            "type": "object",
-            "required": [
-                "device_token",
-                "device_type"
-            ],
-            "properties": {
-                "device_token": {
-                    "type": "string",
-                    "example": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
-                },
-                "device_type": {
-                    "description": "ios, android, web",
-                    "type": "string",
-                    "example": "ios"
-                }
-            }
-        },
         "api.RegisterRequest": {
             "type": "object",
             "properties": {
@@ -1996,9 +2019,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "access_token",
-                "expiry",
-                "refresh_token",
-                "user_id"
+                "expiry"
             ],
             "properties": {
                 "access_token": {
@@ -2012,10 +2033,6 @@ const docTemplate = `{
                 "refresh_token": {
                     "type": "string",
                     "example": "1//04dK..."
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 1
                 }
             }
         },
@@ -2053,6 +2070,58 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Buy decorations"
+                }
+            }
+        },
+        "api.TaskStatusEventResponse": {
+            "type": "object",
+            "properties": {
+                "changed_by_id": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "changed_by_name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "event_time": {
+                    "type": "string",
+                    "example": "2024-03-16T12:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_read": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "new_status": {
+                    "type": "string",
+                    "example": "assigned"
+                },
+                "old_status": {
+                    "type": "string",
+                    "example": "unassigned"
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "task_name": {
+                    "type": "string",
+                    "example": "Buy decorations"
+                }
+            }
+        },
+        "api.TaskStatusEventsResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TaskStatusEventResponse"
+                    }
                 }
             }
         },
