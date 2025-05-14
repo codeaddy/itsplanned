@@ -18,7 +18,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// Creates HTTP-client with OAuth-token
+var (
+	// For testing purposes
+	newCalendarService = calendar.NewService
+)
+
 func getGoogleClient(ctx context.Context, accessToken string) *http.Client {
 	config := &oauth2.Config{
 		Endpoint: google.Endpoint,
@@ -26,6 +30,73 @@ func getGoogleClient(ctx context.Context, accessToken string) *http.Client {
 
 	token := &oauth2.Token{AccessToken: accessToken}
 	return config.Client(ctx, token)
+}
+
+func ImportCalendarEventsForUser(db *gorm.DB, userID uint, accessToken string) error {
+	ctx := context.Background()
+	client := getGoogleClient(ctx, accessToken)
+	srv, err := newCalendarService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Printf("Unable to retrieve Calendar client: %v", err)
+		return fmt.Errorf("failed to connect to Google Calendar: %v", err)
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	fourWeeksLater := time.Now().AddDate(0, 0, 28).Format(time.RFC3339)
+
+	events, err := srv.Events.List("primary").
+		ShowDeleted(false).
+		SingleEvents(true).
+		TimeMin(now).
+		TimeMax(fourWeeksLater).
+		OrderBy("startTime").
+		Do()
+	if err != nil {
+		log.Printf("Unable to retrieve events: %v", err)
+		return fmt.Errorf("unable to retrieve events: %v", err)
+	}
+
+	for _, item := range events.Items {
+		if item.Start.DateTime == "" || item.End.DateTime == "" {
+			continue
+		}
+
+		startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
+		if err != nil {
+			log.Printf("Error parsing start time for event %s: %v", item.Id, err)
+			continue
+		}
+		startTime = startTime.In(time.FixedZone("MSK", 3*60*60))
+
+		endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
+		if err != nil {
+			log.Printf("Error parsing end time for event %s: %v", item.Id, err)
+			continue
+		}
+		endTime = endTime.In(time.FixedZone("MSK", 3*60*60))
+
+		var existingEvent models.CalendarEvent
+		if err := db.Where("user_id = ? AND title = ? AND start_time = ?", userID, item.Summary, startTime).First(&existingEvent).Error; err == nil {
+			db.Model(&existingEvent).Updates(models.CalendarEvent{
+				Title:   item.Summary,
+				EndTime: endTime,
+			})
+			continue
+		}
+
+		event := models.CalendarEvent{
+			UserID:    userID,
+			Title:     item.Summary,
+			StartTime: startTime,
+			EndTime:   endTime,
+		}
+
+		if err := db.Create(&event).Error; err != nil {
+			log.Printf("Error creating calendar event for user %d: %v", userID, err)
+		}
+	}
+
+	return nil
 }
 
 // @Summary Import Google Calendar events
@@ -56,58 +127,10 @@ func ImportCalendarEvents(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	ctx := context.Background()
-	client := getGoogleClient(ctx, decryptedAccessToken)
-	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	err = ImportCalendarEventsForUser(db, userID.(uint), decryptedAccessToken)
 	if err != nil {
-		log.Printf("Unable to retrieve Calendar client: %v", err)
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to connect to Google Calendar"})
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: err.Error()})
 		return
-	}
-
-	now := time.Now().Format(time.RFC3339)
-	fourWeeksLater := time.Now().AddDate(0, 0, 28).Format(time.RFC3339)
-
-	events, err := srv.Events.List("primary").
-		ShowDeleted(false).
-		SingleEvents(true).
-		TimeMin(now).
-		TimeMax(fourWeeksLater).
-		OrderBy("startTime").
-		Do()
-	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Unable to retrieve events"})
-		return
-	}
-
-	for _, item := range events.Items {
-		startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
-		if err != nil {
-			continue
-		}
-		startTime = startTime.In(time.FixedZone("MSK", 3*60*60))
-
-		endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
-		if err != nil {
-			continue
-		}
-		endTime = endTime.In(time.FixedZone("MSK", 3*60*60))
-
-		// Check if event already exists (with given title and start_time)
-		var existingEvent models.CalendarEvent
-		if err := db.Where("user_id = ? AND title = ? AND start_time = ?", userID, item.Summary, startTime).First(&existingEvent).Error; err == nil {
-			continue
-		}
-
-		event := models.CalendarEvent{
-			UserID:    userID.(uint),
-			Title:     item.Summary,
-			StartTime: startTime,
-			EndTime:   endTime,
-		}
-
-		db.Create(&event)
 	}
 
 	c.JSON(http.StatusOK, api.ImportCalendarEventsResponse{Message: "Events imported successfully"})

@@ -257,6 +257,9 @@ components:
           type: integer
           nullable: true
           example: 2
+        assigned_to_name:
+          type: string
+          example: "John Doe"
         is_completed:
           type: boolean
           example: false
@@ -334,6 +337,9 @@ components:
         event_id:
           type: integer
           example: 1
+        display_name:
+          type: string
+          example: "John Doe"
 
     EventLeaderboardResponse:
       type: object
@@ -465,6 +471,31 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TaskStatusEventResponse'
+
+    GenerateInviteLinkRequest:
+      type: object
+      required:
+        - event_id
+      properties:
+        event_id:
+          type: integer
+          example: 1
+          description: "ID of the event to generate an invite link for"
+          
+    GenerateInviteLinkResponse:
+      type: object
+      properties:
+        invite_link:
+          type: string
+          example: "https://api.itsplanned.app/events/redirect/xyz123"
+          description: "Generated invite link for sharing"
+          
+    JoinEventResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Successfully joined event"
 
 paths:
   /register:
@@ -718,6 +749,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to update event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    delete:
+      tags:
+        - events
+      summary: Delete an event
+      description: Delete an event and all associated data (tasks, event scores, participations, invitations)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event to delete
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not the organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to delete event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
 
   /events/{id}/budget:
     get:
@@ -801,6 +883,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIResponse'
 
+  /events/{id}/leave:
+    delete:
+      tags:
+        - invitations
+      summary: Leave an event
+      description: Allow a user to leave an event they are participating in
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the event to leave
+      responses:
+        '200':
+          description: Successfully left event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '400':
+          description: Invalid event ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Cannot leave - you are the organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Not a participant or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
   /events/invite:
     post:
       tags:
@@ -832,10 +961,10 @@ paths:
       parameters:
         - in: path
           name: invite_code
-          required: true
+          required: false
           schema:
             type: string
-          description: Invite code for the event
+          description: Invite code from path parameter
       responses:
         '200':
           description: Successfully joined event
@@ -843,6 +972,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JoinEventResponse'
+        '400':
+          description: Already a participant or missing invite code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Invalid invite link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events/join:
+    get:
+      tags:
+        - invitations
+      summary: Join event using invite code from query parameter
+      description: Used by mobile app after deeplink redirection
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: Invite code from query parameter
+      responses:
+        '200':
+          description: Successfully joined event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinEventResponse'
+        '400':
+          description: Already a participant or missing invite code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Invalid invite link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /events/redirect/{invite_code}:
+    get:
+      tags:
+        - invitations
+      summary: Redirect to iOS app deeplink
+      description: Redirects from web browser to iOS app deeplink for event joining
+      parameters:
+        - in: path
+          name: invite_code
+          required: true
+          schema:
+            type: string
+          description: Invite code from the URL
+      responses:
+        '200':
+          description: HTML page with redirection to deeplink
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<!DOCTYPE html><html>...</html>"
+        '404':
+          description: Invalid invite link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
 
   /events/{id}/leaderboard:
     get:
@@ -1099,6 +1315,51 @@ paths:
                 $ref: '#/components/schemas/APIResponse'
         '404':
           description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    delete:
+      tags:
+        - tasks
+      summary: Delete a task
+      description: Delete a task and any associated task status events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the task to delete
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '403':
+          description: Forbidden - not the event organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to delete task
           content:
             application/json:
               schema:
@@ -1382,6 +1643,34 @@ paths:
       responses:
         '200':
           description: Token saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+
+  /auth/oauth/delete:
+    delete:
+      tags:
+        - calendar
+      summary: Delete OAuth tokens
+      description: Delete the OAuth tokens for the currently authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Failed to delete token
           content:
             application/json:
               schema:

@@ -42,9 +42,10 @@ type EventBudgetResponse struct {
 
 // EventLeaderboardEntry represents a single entry in the event leaderboard
 type EventLeaderboardEntry struct {
-	UserID  uint    `json:"user_id" example:"1"`
-	Score   float64 `json:"score" example:"85.5"`
-	EventID uint    `json:"event_id" example:"1"`
+	UserID      uint    `json:"user_id" example:"1"`
+	DisplayName string  `json:"display_name" example:"John Doe"`
+	Score       float64 `json:"score" example:"85.5"`
+	EventID     uint    `json:"event_id" example:"1"`
 }
 
 // EventLeaderboardResponse represents the response for event leaderboard

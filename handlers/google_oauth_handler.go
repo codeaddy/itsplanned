@@ -50,29 +50,24 @@ func GoogleOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	// Check if we need to redirect to an app deeplink
 	appRedirect := c.Query("app_redirect")
 	if appRedirect != "" {
-		// Create a URL with the tokens as query parameters
 		appURL, err := url.Parse(appRedirect)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid app redirect URL"})
 			return
 		}
 
-		// Add the tokens as query parameters
 		q := appURL.Query()
 		q.Add("access_token", token.AccessToken)
 		q.Add("refresh_token", token.RefreshToken)
 		q.Add("expiry", token.Expiry.Format("2006-01-02T15:04:05Z07:00"))
 		appURL.RawQuery = q.Encode()
 
-		// Redirect to the app
 		c.Redirect(http.StatusFound, appURL.String())
 		return
 	}
 
-	// If no app redirect, return JSON response
 	c.JSON(http.StatusOK, api.GoogleOAuthCallbackResponse{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -89,13 +84,11 @@ func GoogleOAuthCallback(c *gin.Context) {
 // @Success 302 {string} string "Redirect to app deeplink"
 // @Router /auth/web-to-app [get]
 func WebToAppRedirect(c *gin.Context) {
-	// Get the authorization code from Google
 	code := c.Query("code")
 	state := c.Query("state")
 
 	appURI := "itsplanned://callback/auth"
 
-	// Pass the code and state to the app so it can exchange them for tokens
 	appURL, _ := url.Parse(appURI)
 	q := appURL.Query()
 	q.Add("code", code)

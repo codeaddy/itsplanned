@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"itsplanned/models/api"
+	"itsplanned/services/yandex"
 	"net/http"
 	"os"
 
@@ -31,16 +32,20 @@ func SendToYandexGPT(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Get Yandex GPT API credentials from environment
 	folderID := os.Getenv("YANDEX_CATALOG_ID")
-	iamToken := os.Getenv("YANDEX_IAM_TOKEN")
+
+	// Get IAM token from token service
+	iamToken, err := yandex.GetToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to get Yandex API token: " + err.Error()})
+		return
+	}
 
 	if folderID == "" || iamToken == "" {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Missing Yandex GPT API credentials"})
 		return
 	}
 
-	// Prepare the request to Yandex GPT API
 	yandexRequest := api.YandexGPTAPIRequest{
 		ModelUri: fmt.Sprintf("gpt://%s/yandexgpt", folderID),
 		CompletionOptions: struct {
@@ -95,20 +100,17 @@ func SendToYandexGPT(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Parse response from Yandex GPT API
 	var yandexResponse api.YandexGPTAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&yandexResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to parse Yandex GPT response"})
 		return
 	}
 
-	// Check if response contains alternatives
 	if len(yandexResponse.Result.Alternatives) == 0 {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "No response from Yandex GPT"})
 		return
 	}
 
-	// Return the response
 	c.JSON(http.StatusOK, api.YandexGPTResponse{
 		Message: yandexResponse.Result.Alternatives[0].Message.Text,
 	})

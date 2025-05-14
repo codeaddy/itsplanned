@@ -37,6 +37,7 @@ func SetupTestDB(t *testing.T) func() {
 		&models.AIChat{},
 		&models.CalendarEvent{},
 		&models.AIMessage{},
+		&models.EventScore{},
 	)
 	if err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
@@ -60,9 +61,11 @@ func SetupTestDB(t *testing.T) func() {
 
 // CreateTestUser creates a test user and returns it
 func CreateTestUser(t *testing.T) *models.User {
+	// Import the security package
 	user := &models.User{
-		Email:       fmt.Sprintf("test%d@example.com", time.Now().UnixNano()),
-		DisplayName: "Test User",
+		Email:        fmt.Sprintf("test%d@example.com", time.Now().UnixNano()),
+		DisplayName:  "Test User",
+		PasswordHash: "$2a$10$JuICIh7KgTKsJFeBoUXvFO4qkQzKpAHU1.8/WMcXXRX.L3bXP9Y26", // "password123" hashed
 	}
 
 	if err := TestDB.Create(user).Error; err != nil {

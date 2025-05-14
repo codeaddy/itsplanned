@@ -32,7 +32,7 @@ func toEventResponse(event *models.Event) *api.EventResponse {
 	}
 }
 
-func getUserBusySlotsForDay(db *gorm.DB, userID uint, date string, busySlots *map[string]int) {
+func getUserBusySlotsForDay(db *gorm.DB, userID uint, date string, durationMins int64, busySlots *map[string]int) {
 	var events []models.CalendarEvent
 	db.Where("user_id = ? AND DATE(start_time) = ?", userID, date).Find(&events)
 
@@ -49,6 +49,11 @@ func getUserBusySlotsForDay(db *gorm.DB, userID uint, date string, busySlots *ma
 		for end.Minute() != 0 && end.Minute() != 30 {
 			end = end.Add(time.Minute)
 		}
+
+		start = start.Add(-time.Duration(max(0, durationMins-30)) * time.Minute)
+		end = end.Add(time.Duration(max(0, durationMins-30)) * time.Minute)
+
+		end = end.Add(time.Minute)
 
 		for t := start; t.Before(end); t = t.Add(time.Minute * 30) {
 			key := t.Format("15:04")
@@ -68,14 +73,14 @@ func suggestTimeSlotsForDay(busySlots *map[string]int, date string, durationMins
 	for timeCursor.Before(end) {
 		maxBusy := 0
 
-		for i := int64(0); i < durationMins; i += 30 {
-			key := timeCursor.Add(time.Minute * time.Duration(i)).Format("15:04")
-			if (*busySlots)[key] > 0 {
-				if (*busySlots)[key] > maxBusy {
-					maxBusy = (*busySlots)[key]
-				}
+		// for i := int64(0); i < durationMins; i += 30 {
+		key := timeCursor.Format("15:04")
+		if (*busySlots)[key] > 0 {
+			if (*busySlots)[key] > maxBusy {
+				maxBusy = (*busySlots)[key]
 			}
 		}
+		// }
 
 		timeSlots = append(timeSlots, api.TimeSlotSuggestion{
 			Slot:      date + " " + timeCursor.Format("15:04"),
@@ -90,7 +95,6 @@ func suggestTimeSlotsForDay(busySlots *map[string]int, date string, durationMins
 		return timeSlots[i].BusyCount < timeSlots[j].BusyCount
 	})
 
-	// Return top 5 suggestions
 	if len(timeSlots) > 5 {
 		timeSlots = timeSlots[:5]
 	}
@@ -280,11 +284,22 @@ func GetEventLeaderboard(c *gin.Context, db *gorm.DB) {
 
 	var response api.EventLeaderboardResponse
 	for _, entry := range leaderboard {
-		response.Leaderboard = append(response.Leaderboard, api.EventLeaderboardEntry{
-			UserID:  entry.UserID,
-			Score:   entry.Score,
-			EventID: entry.EventID,
-		})
+		var user models.User
+		if err := db.First(&user, entry.UserID).Error; err != nil {
+			response.Leaderboard = append(response.Leaderboard, api.EventLeaderboardEntry{
+				UserID:      entry.UserID,
+				DisplayName: "Unknown User",
+				Score:       entry.Score,
+				EventID:     entry.EventID,
+			})
+		} else {
+			response.Leaderboard = append(response.Leaderboard, api.EventLeaderboardEntry{
+				UserID:      entry.UserID,
+				DisplayName: user.DisplayName,
+				Score:       entry.Score,
+				EventID:     entry.EventID,
+			})
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -339,7 +354,6 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Set default values for startTime and endTime if not provided
 	if request.StartTime == "" {
 		request.StartTime = leftTimeBoundForBusySlots
 	}
@@ -348,7 +362,6 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 		request.EndTime = rightTimeBoundForBusySlots
 	}
 
-	// Validate time format
 	_, startErr := time.Parse("15:04", request.StartTime)
 	_, endErr := time.Parse("15:04", request.EndTime)
 
@@ -357,7 +370,6 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Additional validation for time format
 	if len(request.StartTime) != 5 || request.StartTime[2] != ':' {
 		c.JSON(http.StatusBadRequest, api.APIResponse{Error: "Invalid start time format. Use HH:MM format (24-hour)."})
 		return
@@ -374,7 +386,6 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Check if the user is a participant or organizer of the event
 	userID, _ := c.Get("user_id")
 	if event.OrganizerID != userID.(uint) {
 		var participation models.EventParticipation
@@ -396,7 +407,7 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 
 	busySlots := make(map[string]int)
 	for _, user := range participants {
-		getUserBusySlotsForDay(db, user.ID, request.Date, &busySlots)
+		getUserBusySlotsForDay(db, user.ID, request.Date, request.DurationMins, &busySlots)
 	}
 
 	suggestedSlots := suggestTimeSlotsForDay(&busySlots, request.Date, request.DurationMins, request.StartTime, request.EndTime)
@@ -421,35 +432,30 @@ func FindBestTimeSlotsForDay(c *gin.Context, db *gorm.DB) {
 // @Failure 404 {object} api.APIResponse "Event not found"
 // @Router /events/{id}/participants [get]
 func GetEventParticipants(c *gin.Context, db *gorm.DB) {
-	// Get the event ID from path parameter
 	eventIDStr := c.Param("id")
 	if eventIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Event ID is required"})
 		return
 	}
 
-	// Parse event ID
 	var eventID uint
 	if _, err := fmt.Sscanf(eventIDStr, "%d", &eventID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID format"})
 		return
 	}
 
-	// Get the current user ID from the context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Check if the event exists
 	var event models.Event
 	if err := db.First(&event, eventID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		return
 	}
 
-	// Check if the user is a participant of the event
 	var participation models.EventParticipation
 	if err := db.Where("event_id = ? AND user_id = ?", eventID, userID).First(&participation).Error; err != nil {
 		// Also check if the user is the organizer
@@ -459,25 +465,20 @@ func GetEventParticipants(c *gin.Context, db *gorm.DB) {
 		}
 	}
 
-	// Get all participants of the event
 	var participations []models.EventParticipation
 	if err := db.Where("event_id = ?", eventID).Find(&participations).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve event participants"})
 		return
 	}
 
-	// Get the display names of all participants
 	var participants []string
 
-	// Add the organizer to the list
 	var organizer models.User
 	if err := db.First(&organizer, event.OrganizerID).Error; err == nil {
 		participants = append(participants, organizer.DisplayName)
 	}
 
-	// Add other participants
 	for _, p := range participations {
-		// Skip if the participant is the organizer (already added)
 		if p.UserID == event.OrganizerID {
 			continue
 		}
@@ -488,7 +489,6 @@ func GetEventParticipants(c *gin.Context, db *gorm.DB) {
 		}
 	}
 
-	// Return the list of participants
 	c.JSON(http.StatusOK, api.EventParticipantsResponse{
 		Participants: participants,
 	})
@@ -515,14 +515,12 @@ func GetEvent(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Get the current user ID from the context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "User not authenticated"})
 		return
 	}
 
-	// Check if the user is the organizer or a participant of the event
 	if event.OrganizerID != userID.(uint) {
 		var participation models.EventParticipation
 		if err := db.Where("event_id = ? AND user_id = ?", event.ID, userID).First(&participation).Error; err != nil {
@@ -533,5 +531,82 @@ func GetEvent(c *gin.Context, db *gorm.DB) {
 
 	c.JSON(http.StatusOK, api.APIResponse{
 		Data: toEventResponse(&event),
+	})
+}
+
+// @Summary Delete an event
+// @Description Delete an event and all associated data (tasks, event scores, participations, invitations)
+// @Tags events
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Event ID"
+// @Success 200 {object} api.APIResponse "Event deleted successfully"
+// @Failure 401 {object} api.APIResponse "Unauthorized"
+// @Failure 403 {object} api.APIResponse "Forbidden - not the organizer"
+// @Failure 404 {object} api.APIResponse "Event not found"
+// @Failure 500 {object} api.APIResponse "Failed to delete event"
+// @Router /events/{id} [delete]
+func DeleteEvent(c *gin.Context, db *gorm.DB) {
+	eventID := c.Param("id")
+
+	var event models.Event
+	if err := db.First(&event, eventID).Error; err != nil {
+		c.JSON(http.StatusNotFound, api.APIResponse{Error: "Event not found"})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	if userID.(uint) != event.OrganizerID {
+		c.JSON(http.StatusForbidden, api.APIResponse{Error: "You are not the organizer of this event"})
+		return
+	}
+
+	// Delete all related data in a transaction
+	tx := db.Begin()
+
+	if err := tx.Exec("DELETE FROM task_status_events WHERE task_id IN (SELECT id FROM tasks WHERE event_id = ?)", eventID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete task status events"})
+		return
+	}
+
+	if err := tx.Where("event_id = ?", eventID).Delete(&models.Task{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete tasks"})
+		return
+	}
+
+	if err := tx.Where("event_id = ?", eventID).Delete(&models.EventScore{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete event scores"})
+		return
+	}
+
+	if err := tx.Where("event_id = ?", eventID).Delete(&models.EventParticipation{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete event participations"})
+		return
+	}
+
+	if err := tx.Where("event_id = ?", eventID).Delete(&models.EventInvitation{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete event invitations"})
+		return
+	}
+
+	if err := tx.Delete(&event).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete event"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete event and associated data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, api.APIResponse{
+		Message: "Event and all associated data deleted successfully",
 	})
 }

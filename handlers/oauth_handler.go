@@ -6,6 +6,7 @@ import (
 	"itsplanned/models/api"
 	"itsplanned/security"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -53,7 +54,7 @@ func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 		UserID:       userID.(uint),
 		AccessToken:  hashedAccessToken,
 		RefreshToken: hashedRefreshToken,
-		Expiry:       request.Expiry.String(),
+		Expiry:       request.Expiry.Format(time.RFC3339),
 	}
 
 	if err := db.Create(&token).Error; err != nil {
@@ -62,4 +63,30 @@ func SaveOAuthToken(c *gin.Context, db *gorm.DB) {
 	}
 
 	c.JSON(http.StatusOK, api.APIResponse{Message: "Token saved successfully"})
+}
+
+// @Summary Delete OAuth tokens
+// @Description Delete the OAuth tokens for a user
+// @Tags calendar
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} api.APIResponse "Token deleted successfully"
+// @Failure 404 {object} api.APIResponse "Token not found"
+// @Failure 500 {object} api.APIResponse "Failed to delete token"
+// @Router /auth/oauth/delete [delete]
+func DeleteOAuthToken(c *gin.Context, db *gorm.DB) {
+	userID, _ := c.Get("user_id")
+
+	var existingToken models.UserToken
+	if err := db.Where("user_id = ?", userID).First(&existingToken).Error; err != nil {
+		c.JSON(http.StatusNotFound, api.APIResponse{Error: "OAuth token not found"})
+		return
+	}
+
+	if err := db.Delete(&existingToken).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to delete token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, api.APIResponse{Message: "Token deleted successfully"})
 }

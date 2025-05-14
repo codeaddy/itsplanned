@@ -18,9 +18,13 @@ func SetupRouter(app *common.App) *gin.Engine {
 	r.POST("/login", func(c *gin.Context) { handlers.Login(c, app.DB) })
 	r.POST("/password/reset-request", func(c *gin.Context) { handlers.RequestPasswordReset(c, app.DB) })
 	r.POST("/password/reset", func(c *gin.Context) { handlers.ResetPassword(c, app.DB) })
+	r.GET("/password/reset-redirect", func(c *gin.Context) { handlers.HandlePasswordResetRedirect(c, app.DB) })
 
 	// Swagger documentation route (public)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Add public route for deeplink redirection - no authentication required
+	r.GET("/events/redirect/:invite_code", func(c *gin.Context) { handlers.DeepLinkRedirect(c, app.DB) })
 
 	// Protected routes
 	protected := r.Group("/")
@@ -37,6 +41,7 @@ func SetupRouter(app *common.App) *gin.Engine {
 	protected.POST("/events", func(c *gin.Context) { handlers.CreateEvent(c, app.DB) })
 	protected.POST("/events/find_best_time_for_day", func(c *gin.Context) { handlers.FindBestTimeSlotsForDay(c, app.DB) })
 	protected.PUT("/events/:id", func(c *gin.Context) { handlers.UpdateEvent(c, app.DB) })
+	protected.DELETE("/events/:id", func(c *gin.Context) { handlers.DeleteEvent(c, app.DB) })
 	protected.GET("/events/:id/leaderboard", func(c *gin.Context) { handlers.GetEventLeaderboard(c, app.DB) })
 	protected.GET("/events/:id/participants", func(c *gin.Context) { handlers.GetEventParticipants(c, app.DB) })
 	protected.GET("/events/:id/budget", func(c *gin.Context) { handlers.GetEventBudget(c, app.DB) })
@@ -44,12 +49,16 @@ func SetupRouter(app *common.App) *gin.Engine {
 	// Event invitation routes
 	protected.POST("/events/invite", func(c *gin.Context) { handlers.GenerateInviteLink(c, app.DB) })
 	protected.GET("/events/join/:invite_code", func(c *gin.Context) { handlers.JoinEvent(c, app.DB) })
+	protected.DELETE("/events/:id/leave", func(c *gin.Context) { handlers.LeaveEvent(c, app.DB) })
+	// Add route for joining an event via query parameter (for iOS app deeplink handling)
+	protected.GET("/events/join", func(c *gin.Context) { handlers.JoinEvent(c, app.DB) })
 
 	// Task routes
 	protected.GET("/tasks", func(c *gin.Context) { handlers.GetTasks(c, app.DB) })
 	protected.GET("/tasks/:id", func(c *gin.Context) { handlers.GetTask(c, app.DB) })
 	protected.POST("/tasks", func(c *gin.Context) { handlers.CreateTask(c, app.DB) })
 	protected.PUT("/tasks/:id", func(c *gin.Context) { handlers.UpdateTask(c, app.DB) })
+	protected.DELETE("/tasks/:id", func(c *gin.Context) { handlers.DeleteTask(c, app.DB) })
 	protected.PUT("/tasks/:id/assign", func(c *gin.Context) { handlers.AssignToTask(c, app.DB) })
 	protected.PUT("/tasks/:id/complete", func(c *gin.Context) { handlers.CompleteTask(c, app.DB) })
 
@@ -63,6 +72,7 @@ func SetupRouter(app *common.App) *gin.Engine {
 	protected.GET("/auth/google", handlers.GetGoogleOAuthURL)
 	protected.GET("/auth/google/callback", handlers.GoogleOAuthCallback)
 	protected.POST("/auth/oauth/save", func(c *gin.Context) { handlers.SaveOAuthToken(c, app.DB) })
+	protected.DELETE("/auth/oauth/delete", func(c *gin.Context) { handlers.DeleteOAuthToken(c, app.DB) })
 	protected.GET("/calendar/import", func(c *gin.Context) { handlers.ImportCalendarEvents(c, app.DB) })
 
 	// OAuth web to app redirection - make this public

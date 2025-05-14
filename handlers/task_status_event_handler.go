@@ -33,14 +33,12 @@ func toTaskStatusEventResponse(event *models.TaskStatusEvent) api.TaskStatusEven
 // @Failure 500 {object} api.APIResponse "Internal server error"
 // @Router /task-status-events/unread [get]
 func GetUnreadTaskStatusEvents(c *gin.Context, db *gorm.DB) {
-	// Get the current user ID from the context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.APIResponse{Error: "User not authenticated"})
 		return
 	}
 
-	// Get all unread task status events for the user
 	var events []models.TaskStatusEvent
 	if err := db.Where("user_id = ? AND is_read = ?", userID, false).
 		Order("event_time DESC").
@@ -49,13 +47,11 @@ func GetUnreadTaskStatusEvents(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Transform to response objects
 	var responseEvents []api.TaskStatusEventResponse
 	for _, event := range events {
 		responseEvents = append(responseEvents, toTaskStatusEventResponse(&event))
 	}
 
-	// Mark events as read
 	if len(events) > 0 {
 		if err := db.Model(&models.TaskStatusEvent{}).
 			Where("user_id = ? AND is_read = ?", userID, false).

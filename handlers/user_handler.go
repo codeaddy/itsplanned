@@ -124,11 +124,9 @@ func RequestPasswordReset(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Generate reset token
 	resetToken := security.GenerateRandomToken()
 	expiryTime := time.Now().Add(15 * time.Minute)
 
-	// Save reset token in database
 	passwordReset := models.PasswordReset{
 		UserID:     user.ID,
 		Token:      resetToken,
@@ -138,7 +136,6 @@ func RequestPasswordReset(c *gin.Context, db *gorm.DB) {
 
 	fmt.Println("token is:", resetToken)
 
-	// Send email with reset link
 	err := email.SendPasswordResetEmail(user.Email, resetToken)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{
@@ -176,14 +173,12 @@ func ResetPassword(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	// Hash new password
 	hashedPassword, err := security.HashPassword(request.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "Failed to hash password"})
 		return
 	}
 
-	// Update user password
 	var user models.User
 	if err := db.First(&user, passwordReset.UserID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse{Error: "User not found"})
@@ -193,7 +188,6 @@ func ResetPassword(c *gin.Context, db *gorm.DB) {
 	user.PasswordHash = hashedPassword
 	db.Save(&user)
 
-	// Mark reset token as used
 	passwordReset.Used = true
 	db.Save(&passwordReset)
 
@@ -271,4 +265,31 @@ func GetProfile(c *gin.Context, db *gorm.DB) {
 // @Router /logout [post]
 func Logout(c *gin.Context, db *gorm.DB) {
 	c.JSON(http.StatusOK, api.APIResponse{Message: "Logged out successfully"})
+}
+
+// @Summary Handle password reset redirect to mobile app
+// @Description Redirect password reset requests to mobile app with deeplink
+// @Tags auth
+// @Produce html
+// @Param token query string true "Reset token"
+// @Success 302 {string} string "Redirected to mobile app"
+// @Failure 400 {string} string "Invalid token"
+// @Router /password/reset-redirect [get]
+func HandlePasswordResetRedirect(c *gin.Context, db *gorm.DB) {
+	token := c.Query("token")
+	if token == "" {
+		c.String(http.StatusBadRequest, "Invalid or missing token")
+		return
+	}
+
+	var passwordReset models.PasswordReset
+	if err := db.Where("token = ? AND used = ? AND expiry_time > ?",
+		token, false, time.Now()).First(&passwordReset).Error; err != nil {
+		c.String(http.StatusBadRequest, "Invalid or expired token")
+		return
+	}
+
+	// Format: itsplanned://reset-password?token=TOKEN
+	redirectURL := fmt.Sprintf("itsplanned://reset-password?token=%s", token)
+	c.Redirect(http.StatusFound, redirectURL)
 }

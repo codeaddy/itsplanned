@@ -172,6 +172,43 @@
                 }
             }
         },
+        "/auth/oauth/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete the OAuth tokens for a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Delete OAuth tokens",
+                "responses": {
+                    "200": {
+                        "description": "Token deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete token",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/oauth/save": {
             "post": {
                 "security": [
@@ -540,10 +577,15 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Invite Code",
+                        "description": "Invite Code from path",
                         "name": "invite_code",
-                        "in": "path",
-                        "required": true
+                        "in": "path"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite Code from query parameter",
+                        "name": "code",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -563,6 +605,41 @@
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Invalid invite link",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/redirect/{invite_code}": {
+            "get": {
+                "description": "Redirects from web browser to iOS app deeplink for event joining",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Redirect to iOS app deeplink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite Code",
+                        "name": "invite_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to iOS app",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "404": {
@@ -716,6 +793,65 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an event and all associated data (tasks, event scores, participations, invitations)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Delete an event",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - not the organizer",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete event",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
             }
         },
         "/events/{id}/budget": {
@@ -809,6 +945,64 @@
                     },
                     "404": {
                         "description": "Leaderboard not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{id}/leave": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allow a user to leave an event they are participating in",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Leave an event",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully left event",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid event ID",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Cannot leave - you are the organizer",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not a participant or event not found",
                         "schema": {
                             "$ref": "#/definitions/api.APIResponse"
                         }
@@ -995,6 +1189,41 @@
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/password/reset-redirect": {
+            "get": {
+                "description": "Redirect password reset requests to mobile app with deeplink",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Handle password reset redirect to mobile app",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reset token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirected to mobile app",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1503,6 +1732,65 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a task and any associated task status events",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Delete a task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - not the event organizer",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Task not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete task",
+                        "schema": {
+                            "$ref": "#/definitions/api.APIResponse"
+                        }
+                    }
+                }
             }
         },
         "/tasks/{id}/assign": {
@@ -1743,6 +2031,10 @@
         "api.EventLeaderboardEntry": {
             "type": "object",
             "properties": {
+                "display_name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
                 "event_id": {
                     "type": "integer",
                     "example": 1
@@ -2036,6 +2328,10 @@
                 "assigned_to": {
                     "type": "integer",
                     "example": 2
+                },
+                "assigned_to_name": {
+                    "type": "string",
+                    "example": "John Doe"
                 },
                 "budget": {
                     "type": "number",

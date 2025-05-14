@@ -5,13 +5,15 @@ import (
 	"itsplanned/models"
 	"itsplanned/routes"
 	"itsplanned/services/email"
+	"itsplanned/services/scheduler"
+	"itsplanned/services/yandex"
 	"log"
 	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	_ "itsplanned/docs" // This will be generated
+	_ "itsplanned/docs"
 
 	"github.com/joho/godotenv"
 )
@@ -59,7 +61,6 @@ import (
 // @tag.name notifications
 // @tag.description Push notification endpoints for registering device tokens and managing notification preferences
 func main() {
-	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -79,6 +80,15 @@ func main() {
 	if err := email.Init(); err != nil {
 		log.Fatal("Error initializing email service:", err)
 	}
+
+	if err := yandex.Init(); err != nil {
+		log.Fatal("Error initializing Yandex token service:", err)
+	}
+
+	taskScheduler := scheduler.NewScheduler(db)
+	taskScheduler.SetupCalendarSyncTask()
+	taskScheduler.Start()
+	log.Println("Started calendar sync background task")
 
 	// Run database migrations
 	if err := models.MigrateUser(db); err != nil {
@@ -112,7 +122,6 @@ func main() {
 	// Setup routes
 	r := routes.SetupRouter(app)
 
-	// Get port from environment variable or use default
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

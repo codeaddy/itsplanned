@@ -2,14 +2,15 @@ package api
 
 // TaskResponse represents a task in the response
 type TaskResponse struct {
-	ID          uint    `json:"id" example:"1"`
-	Title       string  `json:"title" example:"Buy decorations"`
-	Description string  `json:"description" example:"Purchase party decorations from the store"`
-	Budget      float64 `json:"budget" example:"50.00"`
-	Points      int     `json:"points" example:"10"`
-	EventID     uint    `json:"event_id" example:"1"`
-	AssignedTo  *uint   `json:"assigned_to,omitempty" example:"2"`
-	IsCompleted bool    `json:"is_completed" example:"false"`
+	ID             uint    `json:"id" example:"1"`
+	Title          string  `json:"title" example:"Buy decorations"`
+	Description    string  `json:"description" example:"Purchase party decorations from the store"`
+	Budget         float64 `json:"budget" example:"50.00"`
+	Points         int     `json:"points" example:"10"`
+	EventID        uint    `json:"event_id" example:"1"`
+	AssignedTo     *uint   `json:"assigned_to,omitempty" example:"2"`
+	AssignedToName string  `json:"assigned_to_name,omitempty" example:"John Doe"`
+	IsCompleted    bool    `json:"is_completed" example:"false"`
 }
 
 // CreateTaskRequest represents the request to create a new task

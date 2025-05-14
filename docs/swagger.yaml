@@ -73,6 +73,9 @@ definitions:
     type: object
   api.EventLeaderboardEntry:
     properties:
+      display_name:
+        example: John Doe
+        type: string
       event_id:
         example: 1
         type: integer
@@ -277,6 +280,9 @@ definitions:
       assigned_to:
         example: 2
         type: integer
+      assigned_to_name:
+        example: John Doe
+        type: string
       budget:
         example: 50
         type: number
@@ -538,6 +544,29 @@ paths:
       summary: Google OAuth callback
       tags:
       - calendar
+  /auth/oauth/delete:
+    delete:
+      description: Delete the OAuth tokens for a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token deleted successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Token not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to delete token
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete OAuth tokens
+      tags:
+      - calendar
   /auth/oauth/save:
     post:
       consumes:
@@ -683,6 +712,45 @@ paths:
       tags:
       - events
   /events/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an event and all associated data (tasks, event scores, participations,
+        invitations)
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event deleted successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not the organizer
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to delete event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an event
+      tags:
+      - events
     get:
       description: Get detailed information about a specific event
       parameters:
@@ -832,6 +900,43 @@ paths:
       summary: Get event leaderboard
       tags:
       - events
+  /events/{id}/leave:
+    delete:
+      description: Allow a user to leave an event they are participating in
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully left event
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "400":
+          description: Invalid event ID
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Cannot leave - you are the organizer
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Not a participant or event not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Leave an event
+      tags:
+      - invitations
   /events/{id}/participants:
     get:
       consumes:
@@ -948,10 +1053,13 @@ paths:
     get:
       description: Join an event using a unique invite code
       parameters:
-      - description: Invite Code
+      - description: Invite Code from path
         in: path
         name: invite_code
-        required: true
+        type: string
+      - description: Invite Code from query parameter
+        in: query
+        name: code
         type: string
       produces:
       - application/json
@@ -975,6 +1083,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Join event using invite link
+      tags:
+      - invitations
+  /events/redirect/{invite_code}:
+    get:
+      description: Redirects from web browser to iOS app deeplink for event joining
+      parameters:
+      - description: Invite Code
+        in: path
+        name: invite_code
+        required: true
+        type: string
+      produces:
+      - text/html
+      responses:
+        "302":
+          description: Redirect to iOS app
+          schema:
+            type: string
+        "404":
+          description: Invalid invite link
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      summary: Redirect to iOS app deeplink
       tags:
       - invitations
   /login:
@@ -1054,6 +1185,29 @@ paths:
           schema:
             $ref: '#/definitions/api.APIResponse'
       summary: Reset password
+      tags:
+      - auth
+  /password/reset-redirect:
+    get:
+      description: Redirect password reset requests to mobile app with deeplink
+      parameters:
+      - description: Reset token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - text/html
+      responses:
+        "302":
+          description: Redirected to mobile app
+          schema:
+            type: string
+        "400":
+          description: Invalid token
+          schema:
+            type: string
+      summary: Handle password reset redirect to mobile app
       tags:
       - auth
   /password/reset-request:
@@ -1278,6 +1432,44 @@ paths:
       tags:
       - tasks
   /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task and any associated task status events
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task deleted successfully
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "403":
+          description: Forbidden - not the event organizer
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+        "500":
+          description: Failed to delete task
+          schema:
+            $ref: '#/definitions/api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a task
+      tags:
+      - tasks
     get:
       description: Get detailed information about a specific task
       parameters:

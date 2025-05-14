@@ -72,7 +72,7 @@ func SendPasswordResetEmail(toEmail, resetToken string) error {
 	defer writer.Close()
 
 	subject := "Password Reset Request"
-	resetLink := fmt.Sprintf("http://localhost:8080/reset-password?token=%s", resetToken)
+	resetLink := fmt.Sprintf("http://localhost:8080/password/reset-redirect?token=%s", resetToken)
 	body := fmt.Sprintf(`
 		<html>
 		<head>
